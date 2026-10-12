@@ -1,0 +1,1046 @@
+<title>보안 관계도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 화면 전체가 위에서 내려다본 평면도(방 = 기관, 복도 = 관계). 방을 누르면 아래 패널에 설명.
+   Look: 어두운 설계도 한 가지 톤으로 고정 (의도된 단일 테마) */
+:root{
+  color-scheme:dark;
+  --bg:#0F1720; --floor:#16222E; --room:#22313F; --room-hi:#2C4152; --line:#3B5063;
+  --hall:#1B2A37; --hall-hi:#4E7A8C; --fg:#E4ECF2; --muted:#8FA3B4;
+  --task:#F2C94C; --open:#7FD1AE; --alarm:#EB6A5B;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.6;padding-inline:16px;padding-block:16px 40px}
+.wrap{max-width:1180px;margin-inline:auto;display:grid;gap:14px}
+.bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
+h1{margin:0;font-size:1.4rem;font-weight:700}
+.sub{color:var(--muted);font-size:.86rem}
+.toggle{display:inline-flex;align-items:center;gap:8px;font-size:.86rem;color:var(--muted);cursor:pointer;user-select:none}
+.toggle input{accent-color:var(--open);width:16px;height:16px}
+.mapbox{background:var(--floor);border:1px solid var(--line);border-radius:12px;padding:10px;overflow-x:auto}
+.mapbox svg{display:block;width:100%;min-width:640px;height:auto}
+.legend svg{display:inline-block;width:16px;height:16px}
+.hall{stroke:var(--hall);stroke-width:16;fill:none;stroke-linecap:round;stroke-linejoin:round}
+.hall.ext{stroke-dasharray:2 14;stroke-width:10}
+.hall.hi{stroke:var(--hall-hi)}
+.hall.dim{opacity:.25}
+.room rect.box{fill:var(--room);stroke:var(--line);stroke-width:1.5;rx:6}
+.room{cursor:pointer}
+.room:hover rect.box,.room:focus rect.box{fill:var(--room-hi)}
+.room:focus{outline:none}
+.room:focus rect.box{stroke:var(--fg);stroke-width:2}
+.room.open rect.box{stroke:var(--open);stroke-width:2}
+.room.sel rect.box{fill:var(--room-hi);stroke:var(--fg);stroke-width:2.5}
+.room.dim{opacity:.35}
+.room .nm{fill:var(--fg);font-size:14px;font-weight:700;font-family:var(--f-body)}
+.room .rn{fill:var(--open);font-size:11px;font-family:var(--f-mono)}
+.lock .body{fill:var(--muted)}
+.lock .shackle{fill:none;stroke:var(--muted);stroke-width:2.2;stroke-linecap:round}
+.lock.unlocked .body{fill:var(--open)}
+.lock.unlocked .shackle{stroke:var(--open)}
+.lk{display:inline-block;vertical-align:-2px;margin-right:4px}
+.task circle{fill:var(--task)}
+.task text{fill:#1A1A1A;font-weight:700;font-size:13px;font-family:var(--f-mono)}
+.border{fill:none;stroke:var(--open);stroke-width:2}
+.zone-nm{fill:var(--fg);font-size:14px;font-weight:700;font-family:var(--f-body)}
+.zone{fill:var(--muted);font-family:var(--f-mono);font-size:11px;letter-spacing:.08em}
+.me .pin{fill:var(--task);stroke:var(--bg);stroke-width:2}
+.me .face{fill:#FFF6D6}
+.me .eye{fill:#1A1A1A}
+.me .smile{fill:none;stroke:#1A1A1A;stroke-width:1.6;stroke-linecap:round}
+.me .ground{fill:var(--task);opacity:.55}
+.me .ring{fill:none;stroke:var(--task);stroke-width:2}
+@media (prefers-reduced-motion:no-preference){.me .ring{animation:pulse 1.8s ease-out infinite;transform-box:fill-box;transform-origin:center}
+@keyframes pulse{from{transform:scale(1);opacity:.9}to{transform:scale(3);opacity:0}}}
+.progress{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;font-size:.88rem}
+.progress .bar{flex:1 1 200px;max-width:320px;height:8px;border-radius:4px;background:var(--room);overflow:hidden}
+.progress .fill{height:100%;background:var(--task)}
+.progress b{color:var(--task)}
+
+.legend{display:flex;flex-wrap:wrap;gap:20px;font-size:.8rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:22px;height:8px;border-radius:4px}
+
+.panel{background:var(--floor);border:1px solid var(--line);border-radius:12px;padding:16px 18px;display:grid;gap:12px}
+.panel h2{margin:0;font-size:1.15rem}
+.panel .kick{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);letter-spacing:.06em}
+.panel p{margin:0;max-width:68ch}
+.rel{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.rel li{display:grid;grid-template-columns:minmax(90px,auto) 1fr;gap:10px;align-items:baseline;border-top:1px solid var(--line);padding-top:6px}
+.rel b{color:var(--fg)}
+.rel span{color:var(--muted)}
+.realbox{border-left:3px solid var(--open);padding:6px 12px;background:var(--bg);border-radius:4px;font-size:.9rem}
+.realbox code{font-family:var(--f-mono);color:var(--open)}
+.chip{display:inline-block;font-family:var(--f-mono);font-size:.72rem;padding:1px 8px;border-radius:999px;border:1px solid var(--line);color:var(--muted)}
+.chip.open{border-color:var(--open);color:var(--open)}
+a{color:var(--open)}
+.foot{color:var(--muted);font-size:.78rem}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{font:inherit;font-size:.84rem;background:transparent;color:var(--muted);border:0;padding:6px 12px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--room-hi);color:var(--fg)}
+.seg button:focus-visible{outline:2px solid var(--open);outline-offset:-2px}
+
+/* ===== 학습 패널 (관계도 위에 뜨는 밝은 패널. 아래 토큰은 이 패널 안에서만 쓴다) ===== */
+.quest{--bg:#F2F4F1;--surface:#FFFFFF;--fg:#18211D;--muted:#5B6862;--line:#CBD3CE;--ink:#1E5A4A;--ink-soft:#DCEBE5;--gold:#9A7426;--gold-soft:#F3E9D2;--ok:#2E7D4F;--warn:#B4532A;--f-display:var(--f-body)}
+.quest h2,.quest h3{margin:0;line-height:1.35;text-wrap:balance}
+.quest h2{font-size:1.2rem}
+.quest h3{font-size:1rem}
+.quest p{margin:0}
+.quest a{color:var(--ink)}
+.quest button{font:inherit;cursor:pointer}
+.mapbox{position:relative}
+/* 학습 중: 설명 패널은 왼쪽에 붙고, 지도는 남은 영역에 맞춰 줄어든다. 패널을 접으면 지도가 전체로 */
+.mapbox.learning{display:flex;gap:10px;align-items:stretch;height:clamp(520px,74vh,780px)}
+.mapbox.learning svg{flex:1 1 auto;min-width:0;width:100%;height:100%}
+.mapbox.learning .quest{order:-1;flex:0 0 380px;align-content:start;overflow-y:auto}
+.mapbox.collapsed .quest{display:none}
+.qopen{position:absolute;top:18px;left:18px;z-index:3;font:inherit;font-size:.84rem;font-weight:600;background:var(--task);color:#1A1A1A;border:0;border-radius:8px;padding:7px 12px;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+.qbtns{display:flex;gap:6px;flex:0 0 auto}
+.qhead{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.qhead .stamp{padding:5px 9px}
+.qhead .stamp b{font-size:.86rem}
+.qclose{flex:0 0 auto;font-size:.82rem;background:transparent;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:4px 10px}
+.room.hi rect.box{fill:var(--room-hi);stroke:var(--task);stroke-width:3}
+@media (max-width:820px){.mapbox.learning{flex-direction:column;height:auto}.mapbox.learning svg{height:auto}.mapbox.learning .quest{order:0;flex:none}}
+/* 단계 트랙 — 여권 도장처럼 */
+.track{display:flex;flex-wrap:wrap;gap:8px}
+.stamp{display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:0;border:1.5px dashed var(--line);background:transparent;color:var(--muted);border-radius:8px;padding:8px 12px;text-align:left}
+.stamp b{font-family:var(--f-display);font-size:.98rem;color:inherit}
+.stamp small{font-family:var(--f-mono);font-size:.7rem;letter-spacing:.04em}
+.stamp[data-state="open"]{border-style:solid;border-color:var(--ink);color:var(--fg)}
+.stamp[data-state="done"]{border-style:solid;border-color:var(--ok);color:var(--fg)}
+.stamp[data-state="done"] small{color:var(--ok)}
+.stamp[aria-current="step"]{background:var(--ink-soft)}
+.stamp[disabled]{cursor:not-allowed;opacity:.65}
+
+.scene-hero{display:grid;gap:14px;padding:6px 0}
+.scene-hero .big{display:grid;grid-template-columns:auto 1fr;gap:10px 18px;background:var(--gold-soft);border-radius:10px;padding:18px 20px}
+.scene-hero dt{font-family:var(--f-mono);font-size:.76rem;letter-spacing:.08em;color:var(--gold);padding-top:4px}
+.scene-hero dd{margin:0;font-family:var(--f-display);font-size:1.22rem;line-height:1.4}
+.scene-hero .goal{font-size:.95rem;color:var(--muted)}
+.scene-hero .goal b{color:var(--fg)}
+.scene-mini{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:.84rem;color:var(--muted);border-bottom:1px solid var(--line);padding-bottom:10px}
+.scene-mini b{color:var(--fg);font-weight:500}
+.realtag{display:inline-block;font-family:var(--f-mono);font-size:.7rem;letter-spacing:.06em;color:var(--ink);border:1px solid var(--ink);border-radius:4px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+.tbl{overflow-x:auto}
+.tbl table{border-collapse:collapse;width:100%;font-size:.88rem}
+.tbl .tdesc{font-size:.82rem;color:var(--muted);margin-top:4px}
+.tbl td:first-child{width:38%}
+.tbl th{text-align:left;font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;color:var(--muted);font-weight:500;border-bottom:1.5px solid var(--line);padding:6px 8px}
+.tbl td{border-bottom:1px solid var(--line);padding:7px 8px;vertical-align:top}
+.tbl td:first-child{font-weight:600}
+.tbl code{font-family:var(--f-mono);font-size:.82rem;color:var(--ink);background:var(--ink-soft);padding:1px 6px;border-radius:4px}
+/* 퀘스트 패널 */
+.quest{background:var(--surface);color:var(--fg);border:1px solid var(--line);border-radius:10px;padding:18px 20px;display:grid;gap:16px;min-width:0;font-size:15px;line-height:1.65}
+.scene{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;background:var(--gold-soft);border-radius:8px;padding:12px 14px;font-size:.9rem}
+.scene dt{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;color:var(--gold);padding-top:3px}
+.scene dd{margin:0}
+.role{display:inline-flex;gap:6px;align-items:center;font-size:.82rem;color:var(--muted)}
+.role b{color:var(--fg);font-weight:600}
+
+.steps{display:flex;gap:6px;flex-wrap:wrap}
+.dot{width:28px;height:6px;border-radius:3px;background:var(--line);border:0;padding:0}
+.dot[aria-current="step"]{background:var(--ink)}
+.dot.seen{background:var(--ink-soft)}
+
+.card{display:grid;gap:12px}
+.card .kicker{font-family:var(--f-mono);font-size:.72rem;color:var(--muted);letter-spacing:.05em}
+.prose{display:grid;gap:10px;max-width:62ch}
+
+/* 이중 이름표 */
+.dual{display:inline-flex;flex-wrap:wrap;align-items:baseline;gap:4px;white-space:nowrap}
+.dual .w{font-weight:600;color:var(--fg);border-bottom:1.5px solid var(--gold)}
+.dual .r{font-family:var(--f-mono);font-size:.78em;color:var(--ink);background:var(--ink-soft);padding:1px 6px;border-radius:4px}
+
+/* 흐름 그림 */
+.flow{display:flex;flex-wrap:wrap;align-items:stretch;gap:8px;overflow-x:auto}
+.node{flex:1 1 120px;min-width:0;border:1px solid var(--line);border-radius:8px;padding:10px;display:grid;gap:4px;background:var(--bg)}
+.node .w{font-weight:600}
+.node .r{font-family:var(--f-mono);font-size:.74rem;color:var(--ink)}
+.node .note{font-size:.8rem;color:var(--muted)}
+.arrow{align-self:center;font-family:var(--f-mono);color:var(--gold);font-size:.8rem;text-align:center;flex:0 0 auto;max-width:110px}
+
+/* 실제 이름: 본문에서는 툴팁, 카드 아래에서는 주석 */
+.term{border-bottom:1.5px dotted var(--gold);cursor:help;position:relative;font-weight:600}
+.term sup{font-family:var(--f-mono);font-size:.62em;color:var(--gold);margin-left:1px;font-weight:500}
+.term::after{content:attr(data-real);position:absolute;left:0;bottom:calc(100% + 6px);white-space:nowrap;font-family:var(--f-mono);font-size:.74rem;font-weight:400;background:var(--fg);color:var(--bg);padding:3px 8px;border-radius:5px;pointer-events:none;z-index:2;display:none}
+.term:hover::after,.term:focus::after{display:block}
+.caption{margin:0;padding:10px 0 0 1.4em;border-top:1px dashed var(--line);font-size:.8rem;color:var(--muted);display:grid;gap:2px}
+.caption li::marker{font-family:var(--f-mono);color:var(--gold)}
+.evidence{border-top:1px solid var(--line);padding-top:14px;display:grid;gap:8px;font-size:.82rem;color:var(--muted)}
+.evidence h3{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.08em;font-weight:500;color:var(--muted)}
+.evidence ol{margin:0;padding-left:1.3em;display:grid;gap:8px}
+.evidence p{margin:0}
+.evidence a{word-break:break-all}
+.nest-row{display:flex;flex-wrap:wrap;gap:10px}
+.nest{flex:2 1 260px;min-width:0;border:1.5px solid var(--line);border-radius:10px;padding:10px;display:grid;gap:8px}
+.nest.ghost{flex:1 1 160px;border-style:dashed}
+.nest .lbl{font-family:var(--f-display);font-weight:700}
+.nest .inner{display:flex;flex-wrap:wrap;gap:8px}
+.callout{border-left:3px solid var(--gold);padding:8px 12px;background:var(--bg);font-size:.92rem}
+.src{font-size:.8rem;color:var(--muted);display:grid;gap:2px}
+.src a{word-break:break-all}
+
+.nav{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.btn{border:1px solid var(--ink);background:var(--ink);color:var(--surface);border-radius:7px;padding:8px 16px;font-weight:500}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+/* 테스트 */
+.test{border:1.5px solid var(--ink);border-radius:10px;padding:16px;display:grid;gap:12px}
+.test .tag{font-family:var(--f-mono);font-size:.72rem;color:var(--ink);letter-spacing:.06em}
+.opts{display:grid;gap:8px}
+.opt{display:flex;gap:10px;align-items:flex-start;border:1px solid var(--line);border-radius:7px;padding:9px 12px;cursor:pointer}
+.opt input{margin-top:5px}
+.match{display:grid;gap:8px}
+.mrow{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px;align-items:center}
+@media (max-width:480px){.mrow{grid-template-columns:minmax(0,1fr)}}
+select,textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:7px 9px;width:100%}
+textarea{min-height:110px;resize:vertical}
+.fb{font-size:.92rem;padding:10px 12px;border-radius:7px;background:var(--bg)}
+.fb.ok{border-left:3px solid var(--ok)}
+.fb.no{border-left:3px solid var(--warn)}
+.clue{border:1px dashed var(--line);border-radius:8px;padding:10px 12px;display:grid;gap:6px}
+.clue button{justify-self:start;background:none;border:1px solid var(--line);color:var(--fg);border-radius:6px;padding:4px 10px;font-size:.85rem}
+.clue .found{font-size:.9rem}
+.ai{white-space:pre-wrap;font-size:.92rem}
+@media (prefers-reduced-motion:no-preference){.card{animation:in .25s ease-out}@keyframes in{from{transform:translateY(4px)}to{transform:none}}}
+
+/* 이야기 화면은 게임 대화창처럼 */
+.card.story .dialog{position:relative;background:var(--fg);color:var(--bg);border-radius:10px;padding:18px 20px 16px;display:grid;gap:10px;box-shadow:0 0 0 3px var(--surface),0 0 0 5px var(--fg)}
+.card.story .dialog .prose{max-width:none}
+.card.story .dialog .speaker{position:absolute;top:-12px;left:16px;background:var(--gold);color:#1A1A1A;font-size:.74rem;font-weight:700;padding:2px 10px;border-radius:999px}
+.card.story .dialog .term{border-bottom-color:var(--gold)}
+.card.story .dialog .callout{background:transparent;border-left-color:var(--gold);color:inherit}
+.card.story .dialog .node{background:transparent;border-color:color-mix(in srgb,var(--bg) 35%,transparent)}
+.card.story .dialog .node .note{color:inherit;opacity:.75}
+.card.story .dialog .caption{color:inherit;opacity:.8;border-top-color:color-mix(in srgb,var(--bg) 35%,transparent)}
+.card.story .dialog .opt{border-color:color-mix(in srgb,var(--bg) 35%,transparent)}
+.card.story .dialog .clue{border-color:color-mix(in srgb,var(--bg) 40%,transparent)}
+.card.story .dialog .clue button{color:inherit;border-color:color-mix(in srgb,var(--bg) 40%,transparent)}
+.learn-btn{justify-self:start;font:inherit;font-weight:600;background:var(--task);color:#1A1A1A;border:0;border-radius:8px;padding:8px 14px;cursor:pointer}
+[hidden]{display:none!important}
+</style>
+
+<div class="wrap">
+  <div class="bar">
+    <div>
+      <h1 id="pageH">일상 관계도</h1>
+      <div class="sub" id="pageSub">기관을 누르면 하는 일과 연결이 보입니다</div>
+    </div>
+    <div class="seg" role="group" aria-label="보기 전환">
+      <button type="button" id="mWorld" aria-pressed="true">일상 관계도</button>
+      <button type="button" id="mReal" aria-pressed="false">보안 관계도</button>
+    </div>
+  </div>
+
+  <div class="progress" id="progress"></div>
+
+  <div class="mapbox">
+    <button type="button" class="qopen" id="qOpen" hidden>설명 펼치기</button>
+    <svg id="map" viewBox="0 0 1118 698" role="img" aria-labelledby="mapT">
+      <title id="mapT">우리나라 관계도. 상자는 기관, 복도는 기관 사이의 관계</title>
+      <g id="halls"></g>
+      <rect class="border" x="150" y="18" width="953" height="672" rx="6"/>
+      <text class="zone-nm" id="zIn" x="180" y="44">우리나라</text>
+      <g id="rooms"></g>
+      <g class="me" id="me"><title id="meT">지금 여기</title><ellipse class="ring" rx="10" ry="4"/><ellipse class="ground" rx="6" ry="2.4"/><path class="pin" d="M0 0 C-4 -8 -14 -16 -14 -28 A14 14 0 1 1 14 -28 C14 -16 4 -8 0 0 Z"/><circle class="face" cx="0" cy="-28" r="9.5"/><circle class="eye" cx="-3.6" cy="-30" r="1.6"/><circle class="eye" cx="3.6" cy="-30" r="1.6"/><path class="smile" d="M-3.6 -25.2 Q0 -22 3.6 -25.2"/></g>
+    </svg>
+    <section class="quest" id="quest" hidden aria-live="polite">
+      <div class="qhead"><nav class="track" id="track" aria-label="단계"></nav><span class="qbtns"><button type="button" class="qclose" id="qFold">접기</button><button type="button" class="qclose" id="qClose">관계도로</button></span></div>
+      <div id="questBody" style="display:grid;gap:16px"></div>
+    </section>
+  </div>
+
+  <div class="legend">
+    <span><i class="sw" style="background:var(--hall-hi)"></i><span id="lgHall">연결</span></span>
+    <span><svg class="lock unlocked lk" viewBox="-7 -10 14 16" aria-hidden="true"><path class="shackle" d="M-3.5 -1 V-5 A3.5 3.5 0 0 1 3.5 -5 V-7"/><rect class="body" x="-6" y="-1" width="12" height="9" rx="2"/></svg>열림</span>
+    <span><svg class="lock lk" viewBox="-7 -10 14 16" aria-hidden="true"><path class="shackle" d="M-3.5 -1 V-5 A3.5 3.5 0 0 1 3.5 -5 V-1"/><rect class="body" x="-6" y="-1" width="12" height="9" rx="2"/></svg>잠김</span>
+    <span><svg class="task lk" viewBox="-10 -10 20 20" aria-hidden="true"><circle r="10"/><text x="-3.5" y="4.5">!</text></svg>학습</span>
+    <span><svg class="me lk" viewBox="-15 -44 30 46" aria-hidden="true" style="width:14px;height:21px"><path class="pin" d="M0 0 C-4 -8 -14 -16 -14 -28 A14 14 0 1 1 14 -28 C14 -16 4 -8 0 0 Z"/><circle class="face" cx="0" cy="-28" r="9.5"/><circle class="eye" cx="-3.6" cy="-30" r="1.6"/><circle class="eye" cx="3.6" cy="-30" r="1.6"/><path class="smile" d="M-3.6 -25.2 Q0 -22 3.6 -25.2"/></svg>진행 중</span>
+  </div>
+
+  <section class="panel" id="panel" aria-live="polite"></section>
+
+  <p class="foot">개념도 시제품입니다. 실제 이름과 연결 관계는 각 기관을 단계로 만들 때 근거를 확인해서 확정합니다.</p>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // nm/d: 이 나라 이름과 설명 · rs/r/rd: 실제 짧은 이름, 실제 이름, 실제 설명
+  var ROOMS = [
+    {id:"nb",   x:20,  y:280, w:110, h:100, nm:"이웃 나라",      rs:"다른 조직", r:"다른 조직 · IdP", d:"국경 밖의 다른 나라. 자기 국민의 신분을 확인하고 여권을 발급한다.", rd:"다른 조직의 시스템. 우리 서비스는 그쪽이 수행한 인증 결과를 받아 쓸 수 있다(연합 인증).", open:true, task:true, out:true},
+    {id:"ward", x:170, y:50,  w:130, h:90,  nm:"주민센터",       rs:"IAM",       r:"계정 관리 · IAM", d:"시민의 신분증을 발급하고, 바꾸고, 말소한다. 누가 이 나라 사람인지의 명부를 가진다.", rd:"사용자 계정을 만들고, 권한을 바꾸고, 퇴사 등으로 회수하는 시스템."},
+    {id:"pip",  x:340, y:50,  w:130, h:90,  nm:"법원 자료실",    rs:"PIP",       r:"PIP · 판정 근거 수집", d:"법원이 판정할 때 필요한 근거를 여러 기관에서 모아 정리해 건넨다.", rd:"접근 판정(PDP)에 필요한 속성과 상태 정보를 여러 출처에서 가져다 주는 구성요소. PIP는 XACML 등 접근 제어 모델의 용어이고, NIST SP 800-207은 같은 역할을 데이터 소스로 설명한다."},
+    {id:"court",x:510, y:50,  w:130, h:90,  nm:"법원",           rs:"PDP",       r:"정책 판정 · PDP", d:"이 사람이 지금 이 기관에 들어가도 되는지 판정한다.", rd:"접근 요청마다 정책과 근거를 보고 허용·거부를 결정하는 구성요소."},
+    {id:"intel",x:690, y:50,  w:150, h:90,  nm:"정보기관",       rs:"위협 정보",  r:"위협 인텔리전스", d:"나라 밖에서 알려진 위험한 인물과 수법을 모아 알려 준다.", rd:"알려진 공격자, 악성 주소, 공격 수법 등의 정보를 제공하는 출처."},
+    {id:"pki",  x:880, y:50,  w:170, h:90,  nm:"인감 발급소",    rs:"PKI",       r:"PKI · 인증서", d:"도장(인감)을 발급하고, 그 도장이 진짜인지 확인해 준다.", rd:"인증서를 발급·관리하는 공개키 기반구조. 서명과 인증서 검증의 바탕이 된다."},
+    {id:"gate", x:170, y:285, w:130, h:90,  nm:"국경 검문소",    rs:"방화벽",     r:"방화벽 · 네트워크 경계", d:"나라로 들어오고 나가는 모든 길목. 정해진 길로 오는 것만 통과시킨다.", rd:"허용된 출발지·목적지·포트의 통신만 통과시키는 네트워크 경계 장치."},
+    {id:"auth", x:340, y:285, w:130, h:90,  nm:"출입 심사대",    rs:"인증",       r:"인증 · SSO · MFA", d:"시민이 본인이 맞는지 확인한다. 신분증을 보고, 필요하면 확인 문자를 한 번 더 보낸다.", rd:"사용자가 주장하는 신원이 맞는지 확인하는 단계. 비밀번호, 2단계 인증, 통합 로그인 등.", open:true, task:true},
+    {id:"door", x:510, y:300, w:100, h:60,  nm:"문지기",         rs:"PEP",       r:"접근 통제 지점 · PEP", d:"기관 입구에 서서, 들여보내도 되는지 법원에 묻고 그 판정대로 문을 열거나 막는다.", rd:"요청을 붙잡아 PDP에 판정을 묻고, 결과에 따라 연결을 허용·차단하는 지점."},
+    {id:"bank", x:660, y:275, w:170, h:110, nm:"은행",           rs:"서비스",     r:"서비스 · 애플리케이션", d:"시민이 볼일을 보러 오는 곳. 창구 직원이 신청서를 받아 처리한다.", rd:"사용자가 이용하는 웹 서비스나 애플리케이션.", open:true, task:true},
+    {id:"vault",x:880, y:262, w:170, h:62,  nm:"금고와 장부",    rs:"데이터",     r:"데이터 · DB", d:"은행이 지키는 돈과 거래 기록이 있는 곳.", rd:"서비스가 저장하는 데이터와 데이터베이스."},
+    {id:"bkup", x:880, y:336, w:170, h:62,  nm:"백업 창고",      rs:"백업",       r:"백업", d:"금고와 장부의 사본을 따로 보관한다. 원본이 망가져도 되살릴 수 있게.", rd:"데이터 사본을 별도 위치에 보관해 장애나 랜섬웨어에서 복구하게 하는 체계."},
+    {id:"house",x:170, y:510, w:130, h:90,  nm:"기기 점검소",    rs:"단말 보안",  r:"단말 보안 · EDR · NAC", d:"시민이 쓰는 기기가 안전한 상태인지 점검하고, 수상한 동작을 잡아낸다.", rd:"사용자 단말의 상태를 확인하고(NAC), 단말에서 일어나는 위협을 탐지·대응(EDR)한다."},
+    {id:"ctrl", x:400, y:510, w:170, h:90,  nm:"관제센터",       rs:"SIEM",      r:"로그 분석 · 탐지 · SIEM", d:"모든 기관의 출입 기록을 모아 엮어 보고, 수상한 움직임을 찾아낸다.", rd:"여러 시스템의 로그를 모아 상관 분석하고 이상 징후를 탐지한다."},
+    {id:"swat", x:620, y:510, w:150, h:90,  nm:"긴급출동대",     rs:"SOAR",      r:"자동 대응 · SOAR", d:"관제센터가 이상 징후를 알리면, 정해진 조치를 바로 실행한다.", rd:"탐지 이벤트를 받아 정해 둔 대응 절차(플레이북)를 자동으로 실행한다."},
+    {id:"pam",  x:880, y:510, w:170, h:90,  nm:"금고 열쇠 관리실", rs:"PAM",      r:"특권 계정 관리 · PAM · 서버/DB 접근제어", d:"금고와 장부에 들어가는 관리자의 열쇠를 맡아 두고, 누가 언제 썼는지 남긴다.", rd:"관리자 같은 특권 계정의 접근을 통제·기록한다. 국내에서는 서버 접근제어, DB 접근제어가 별도 제품군으로 많이 쓰인다."}
+  ];
+
+  // a, b: 방 ID · w: 이 나라 설명 · r: 실제 설명 · pts: 복도 경로
+  var HALLS = [
+    {a:"nb",b:"gate", ext:true, pts:[[130,330],[170,330]], w:"시민이 국경을 넘어온다", r:"외부에서 들어오는 네트워크 트래픽"},
+    {a:"nb",b:"auth", ext:true, pts:[[75,280],[75,250],[440,250],[440,285]], w:"이웃 나라 여권을 출입 심사대에 낸다", r:"IdP가 발급한 ID 토큰으로 인증 (OIDC)"},
+    {a:"gate",b:"auth", pts:[[300,330],[340,330]], w:"국경을 통과한 시민이 본인 확인을 받으러 간다", r:"경계를 통과한 요청이 인증 단계로"},
+    {a:"house",b:"gate", pts:[[235,510],[235,375]], w:"점검을 통과한 기기만 국경을 넘게 한다", r:"단말 상태에 따른 네트워크 접근 통제 (NAC)"},
+    {a:"auth",b:"ward", pts:[[370,285],[370,190],[235,190],[235,140]], w:"심사대가 주민센터 명부로 신분을 대조한다", r:"인증 시 계정 저장소 조회"},
+    {a:"pki",b:"auth", pts:[[900,140],[900,220],[455,220],[455,285]], w:"심사대가 인감으로 본인을 확인하기도 한다", r:"인증서 기반 인증"},
+    {a:"auth",b:"door", pts:[[470,330],[510,330]], w:"본인 확인이 끝난 시민이 기관 입구로 간다", r:"인증된 요청이 접근 통제 지점으로"},
+    {a:"door",b:"bank", pts:[[610,330],[660,330]], w:"문지기가 문을 열면 은행에 들어간다", r:"허용된 요청이 서비스로 전달"},
+    {a:"door",b:"court", pts:[[560,300],[560,140]], w:"문지기가 \"들여보내도 돼요?\"를 법원에 묻는다", r:"PEP가 PDP에 판정 요청"},
+    {a:"court",b:"pip", pts:[[510,95],[470,95]], w:"법원이 자료실에 판정 근거를 요청한다", r:"PDP가 PIP에 속성·상태 정보 요청"},
+    {a:"pip",b:"ward", pts:[[340,95],[300,95]], w:"자료실이 주민센터 명부를 가져온다", r:"데이터 소스: ID 관리 시스템"},
+    {a:"pip",b:"intel", pts:[[405,50],[405,32],[765,32],[765,50]], w:"자료실이 정보기관의 위험 인물 정보를 가져온다", r:"데이터 소스: 위협 인텔리전스"},
+    {a:"pip",b:"pki", pts:[[430,50],[430,32],[965,32],[965,50]], w:"자료실이 인감 정보를 가져온다", r:"데이터 소스: 조직 PKI"},
+    {a:"pip",b:"ctrl", pts:[[470,120],[490,120],[490,510]], w:"자료실이 관제센터의 기록 분석을 가져온다", r:"데이터 소스: SIEM"},
+    {a:"pip",b:"house", pts:[[340,120],[320,120],[320,555],[300,555]], w:"자료실이 기기 점검 결과를 가져온다", r:"데이터 소스: 단말 상태 진단 (CDM)"},
+    {a:"bank",b:"vault", pts:[[830,293],[880,293]], w:"은행이 금고와 장부를 읽고 쓴다", r:"애플리케이션의 데이터 접근"},
+    {a:"vault",b:"bkup", pts:[[965,324],[965,336]], w:"금고와 장부의 사본을 백업 창고로 보낸다", r:"데이터 백업"},
+    {a:"pam",b:"vault", pts:[[1050,540],[1064,540],[1064,293],[1050,293]], w:"관리자는 열쇠 관리실을 거쳐서만 금고에 들어간다", r:"특권 계정의 서버·DB 접근 통제"},
+    {a:"bank",b:"ctrl", pts:[[745,385],[745,460],[540,460],[540,510]], w:"은행의 출입 기록이 관제센터로 모인다", r:"서비스 로그 수집"},
+    {a:"auth",b:"ctrl", pts:[[420,375],[420,510]], w:"심사대의 확인 기록이 관제센터로 모인다", r:"인증 로그 수집"},
+    {a:"house",b:"ctrl", pts:[[300,585],[400,585]], w:"기기 점검소가 수상한 동작을 관제센터에 알린다", r:"단말 탐지 이벤트 전달"},
+    {a:"pam",b:"ctrl", pts:[[965,600],[965,630],[485,630],[485,600]], w:"열쇠 관리실의 사용 기록이 관제센터로 모인다", r:"특권 접근 로그 수집"},
+    {a:"ctrl",b:"swat", pts:[[570,555],[620,555]], w:"관제센터가 이상 징후를 긴급출동대에 알린다", r:"탐지 이벤트로 대응 플레이북 실행"},
+    {a:"swat",b:"ward", pts:[[695,600],[695,616],[160,616],[160,95],[170,95]], w:"긴급출동대가 주민센터에 신분증 정지를 요청한다", r:"자동 대응으로 계정 비활성화"}
+  ];
+
+  // 학습 진행: 지금 머무는 방과 진행 중인 이야기 (지금은 고정값. 나중에 진행 기록에서 읽어 온다)
+  var CURRENT = "bank";
+  var CURRENT_STORY = "신원";
+
+  // "우리나라" 글자 아래 여백: 지도 안의 모든 방과 복도를 아래로 22만큼 내린다
+  var DY = 22;
+  // 좌우 여백: 우리나라 안쪽(x >= 150)만 오른쪽으로 14만큼 민다. 이웃 나라는 그대로
+  var DX = 14;
+  ROOMS.forEach(function(r){ r.y += DY; if (!r.out) r.x += DX; });
+  HALLS.forEach(function(h){ h.pts = h.pts.map(function(q){ return [q[0] >= 150 ? q[0] + DX : q[0], q[1] + DY]; }); });
+
+  var byId = {}; ROOMS.forEach(function(r){ byId[r.id] = r; });
+  var svgNS = "http://www.w3.org/2000/svg";
+  var hallG = document.getElementById("halls");
+  var roomG = document.getElementById("rooms");
+  var panel = document.getElementById("panel");
+  var selected = null, real = false;
+
+  function mk(tag, attrs, parent){
+    var e = document.createElementNS(svgNS, tag);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+
+  HALLS.forEach(function(h){
+    h.el = mk("polyline", {points: h.pts.map(function(q){ return q.join(","); }).join(" "), "class": "hall" + (h.ext ? " ext" : "")}, hallG);
+  });
+
+  ROOMS.forEach(function(r){
+    var g = mk("g", {"class":"room" + (r.open ? " open" : ""), tabindex:"0", role:"button"}, roomG);
+    r.tip = mk("title", {}, g);
+    mk("rect", {"class":"box", x:r.x, y:r.y, width:r.w, height:r.h}, g);
+    r.label = mk("text", {"class":"nm", x:r.x+12, y:r.y+26}, g);
+    var lk = mk("g", {"class":"lock" + (r.open ? " unlocked" : ""), transform:"translate("+(r.x+18)+" "+(r.y+r.h-20)+")"}, g);
+    mk("path", {"class":"shackle", d: r.open ? "M-3.5 -1 V-5 A3.5 3.5 0 0 1 3.5 -5 V-7" : "M-3.5 -1 V-5 A3.5 3.5 0 0 1 3.5 -5 V-1"}, lk);
+    mk("rect", {"class":"body", x:"-6", y:"-1", width:"12", height:"9", rx:"2"}, lk);
+    if (r.task){
+      var tk = mk("g", {"class":"task", transform:"translate("+(r.x+r.w-14)+" "+(r.y+14)+")"}, g);
+      mk("circle", {r:"10"}, tk);
+      var tt = mk("text", {x:"-3.5", y:"4.5"}, tk); tt.textContent = "!";
+    }
+    r.el = g;
+    g.addEventListener("click", function(){ select(r.id); });
+    g.addEventListener("keydown", function(e){ if (e.key === "Enter" || e.key === " "){ e.preventDefault(); select(r.id); } });
+  });
+
+  var bW = document.getElementById("mWorld"), bR = document.getElementById("mReal");
+  function setMode(isReal){
+    real = isReal;
+    bW.setAttribute("aria-pressed", String(!real));
+    bR.setAttribute("aria-pressed", String(real));
+    render();
+  }
+  bW.addEventListener("click", function(){ setMode(false); });
+  bR.addEventListener("click", function(){ setMode(true); });
+
+  function name(r){ return real ? r.rs : r.nm; }
+
+  function select(id){ selected = (selected === id) ? null : id; render(); }
+
+  function render(){
+    if (learning){
+      var _s = STAGES[state.stage], _p = _s.steps[state.step];
+      real = state.step >= _s.steps.length || !!(_p && _p.real);
+      bW.setAttribute("aria-pressed", String(!real)); bR.setAttribute("aria-pressed", String(real));
+    }
+    document.getElementById("pageSub").textContent = real ? "시스템을 누르면 역할과 연동이 보입니다" : "기관을 누르면 하는 일과 연결이 보입니다";
+    document.getElementById("pageH").textContent = real ? "보안 관계도" : "일상 관계도";
+    document.getElementById("zIn").textContent = real ? "조직의 시스템" : "우리나라";
+    var cur = byId[learning ? ((HL[STAGES[state.stage].id] || {}).pin || CURRENT) : CURRENT];
+    document.getElementById("me").setAttribute("transform", "translate(" + (cur.x + cur.w - 26) + " " + (cur.y + cur.h - 12) + ") scale(1.5)");
+    var opened = ROOMS.filter(function(r){ return r.open; }).length;
+    var pg = document.getElementById("progress"); pg.textContent = "";
+    var l1 = document.createElement("span"); l1.append("대상 "); var b1 = document.createElement("b"); b1.textContent = name(cur); l1.append(b1);
+    var l2 = document.createElement("span"); l2.append("주제 "); var b2 = document.createElement("b"); b2.textContent = CURRENT_STORY; l2.append(b2);
+    var bar = document.createElement("div"); bar.className = "bar"; var f = document.createElement("div"); f.className = "fill"; f.style.width = Math.round(opened / ROOMS.length * 100) + "%"; bar.append(f);
+    var l3 = document.createElement("span"); l3.textContent = "진행 " + opened + " / " + ROOMS.length;
+    pg.append(l1, l2, bar, l3);
+    document.getElementById("lgHall").textContent = real ? "연동" : "연결";
+    var hlR = null, hlH = null, stp = null, stg = null;
+    if (learning){
+      stg = STAGES[state.stage]; stp = stg.steps[state.step];
+      var hl = (stp && HL[stp.k]) || HL[stg.id] || {r:[]};
+      hlR = {}; (hl.r || []).forEach(function(id){ hlR[id] = true; });
+      hlH = {}; (hl.h || []).forEach(function(id){ hlH[id] = true; });
+    }
+    var linked = {};
+    HALLS.forEach(function(h){
+      var on = learning ? !!(hlH[h.a+"-"+h.b] || hlH[h.b+"-"+h.a]) : (selected && (h.a === selected || h.b === selected));
+      h.el.classList.toggle("hi", !!on);
+      h.el.classList.toggle("dim", learning ? !on : (!!selected && !on));
+      if (on){ linked[h.a] = true; linked[h.b] = true; }
+    });
+    ROOMS.forEach(function(r){
+      r.label.textContent = name(r);
+      r.tip.textContent = real ? r.nm : r.r;
+      r.el.setAttribute("aria-label", name(r));
+      r.el.classList.toggle("sel", !learning && r.id === selected);
+      r.el.classList.toggle("hi", !!(learning && hlR[r.id]));
+      r.el.classList.toggle("dim", learning ? !hlR[r.id] : (!!selected && !linked[r.id]));
+    });
+    panel.hidden = learning;
+    renderPanel();
+  }
+
+  function renderPanel(){
+    panel.textContent = "";
+    if (!selected){
+      var k0 = document.createElement("div"); k0.className = "kick"; k0.textContent = "안내";
+      var h0 = document.createElement("h2"); h0.textContent = real ? "시스템을 하나 눌러 보세요" : "기관을 하나 눌러 보세요";
+      var p0 = document.createElement("p");
+      p0.textContent = real
+        ? "선은 두 시스템이 연동한다는 뜻입니다. 시스템을 누르면 연동된 선만 밝아집니다."
+        : "복도는 두 기관이 무언가를 주고받는 길입니다. 기관을 누르면 연결된 복도만 밝아집니다.";
+      panel.append(k0, h0, p0);
+      return;
+    }
+    var r = byId[selected];
+    var k = document.createElement("div"); k.className = "kick";
+    k.textContent = real ? (r.out ? "외부" : "조직 내부") : (r.out ? "바깥" : "우리나라의 기관");
+    var h = document.createElement("h2"); h.textContent = (real ? r.r : r.nm) + " ";
+    var chip = document.createElement("span"); chip.className = "chip" + (r.open ? " open" : ""); chip.textContent = r.open ? "열림" : "잠김";
+    h.append(chip);
+    var p = document.createElement("p"); p.textContent = real ? r.rd : r.d;
+    panel.append(k, h, p);
+
+    var rels = HALLS.filter(function(x){ return x.a === r.id || x.b === r.id; });
+    if (rels.length){
+      var t = document.createElement("div"); t.className = "kick"; t.textContent = real ? "연동된 곳" : "연결된 곳";
+      var ul = document.createElement("ul"); ul.className = "rel";
+      rels.forEach(function(x){
+        var other = byId[x.a === r.id ? x.b : x.a];
+        var li = document.createElement("li");
+        var b = document.createElement("b"); b.textContent = real ? other.rs : other.nm;
+        var s = document.createElement("span"); s.textContent = real ? x.r : x.w;
+        li.append(b, s); ul.append(li);
+      });
+      panel.append(t, ul);
+    }
+    if (r.task){
+      var go = document.createElement("button"); go.type = "button"; go.className = "learn-btn"; go.textContent = "학습: 신원 열기";
+      go.addEventListener("click", openLearning);
+      panel.append(go);
+    }
+  }
+
+
+  // ================= 학습 (관계도 위 패널) =================
+  // ---------- 근거 ----------
+  var SRC = {
+    rfc9110: {t:"RFC 9110 HTTP Semantics — 1.1절, 3.3절", u:"https://www.rfc-editor.org/rfc/rfc9110.html"},
+    rfc6265: {t:"RFC 6265 HTTP State Management — 1장, 4.1.2.6절", u:"https://www.rfc-editor.org/rfc/rfc6265.html"},
+    owasp:   {t:"OWASP Session Management Cheat Sheet", u:"https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html"},
+    t1539:   {t:"MITRE ATT&CK T1539 Steal Web Session Cookie", u:"https://attack.mitre.org/techniques/T1539/"},
+    t1550:   {t:"MITRE ATT&CK T1550.004 Web Session Cookie", u:"https://attack.mitre.org/techniques/T1550/004/"},
+    oidc:    {t:"OpenID Connect Core 1.0 — 1장, 2장, 3.1.3.7절", u:"https://openid.net/specs/openid-connect-core-1_0.html"}
+  };
+
+  // 이중 이름표 (정적 상수만 넣는다 — 사용자 입력은 절대 이 함수로 렌더하지 않는다)
+  function d(w, r){ return '<span class="term" tabindex="0" data-real="'+r+'">'+w+'</span>'; }
+  function flow(nodes){
+    var h = '<div class="flow">';
+    nodes.forEach(function(n, i){
+      if (n.arrow){ h += '<div class="arrow">'+n.arrow+'</div>'; return; }
+      h += '<div class="node"><span class="w">'+(n.r ? d(n.w, n.r) : n.w)+'</span>'+(n.note?'<span class="note">'+n.note+'</span>':'')+'</div>';
+    });
+    return h + '</div>';
+  }
+
+  // ---------- 내용 ----------
+  // 단계 구조: 장면(첫 화면) → 이야기(세계관만) → 실제로는(대응과 근거) → 확인 테스트
+  // 튜토리얼만 세계관 이름과 실제 이름을 함께 적는다.
+  function w(x){ return '<span class="dual"><span class="w">'+x+'</span></span>'; }
+  function table(rows){
+    var h = '<div class="tbl"><table><thead><tr><th>이 나라에서</th><th>실제로는</th></tr></thead><tbody>';
+    rows.forEach(function(r){ h += '<tr><td>'+r[0]+'</td><td><code>'+r[1]+'</code><div class="tdesc">'+r[2]+'</div></td></tr>'; });
+    return h + '</tbody></table></div>';
+  }
+  function wflow(nodes){
+    var h = '<div class="flow">';
+    nodes.forEach(function(n){
+      if (n.arrow){ h += '<div class="arrow">'+n.arrow+'</div>'; return; }
+      h += '<div class="node"><span class="w">'+n.w+'</span>'+(n.note?'<span class="note">'+n.note+'</span>':'')+'</div>';
+    });
+    return h + '</div>';
+  }
+
+  var STAGES = [
+    {
+      id:"t", label:"튜토리얼", role:"시민",
+      scene:{who:"나, 국가의 시민", where:"한 나라 (국가)", what:"국가가 돌아가는 기본 법칙 두 가지를 익힌다"},
+      goal:"국가의 구조와, 모든 일의 바탕이 되는 법칙 두 가지",
+      map:{here:"r-bank"},
+      steps:[
+        { k:"T-1 · 이 나라", h:"우리나라를 둘러보자",
+          body:
+            '<div class="prose"><p>여기는 <b>우리나라</b>입니다. 나라 안에는 은행, 사법부, 감시탑 같은 <b>기관</b>이 있고, <b>시민</b>들이 그 기관에 볼일을 보러 다닙니다.</p>'+
+            '<p>국경 너머에는 <b>이웃 나라</b>가 있습니다. 이웃 나라에도 자기 기관과 자기 시민이 있습니다.</p>'+
+            '<p>왼쪽 지도에서 테두리가 진한 곳이 지금 갈 수 있는 곳이고, 흐린 곳은 아직 열리지 않은 곳입니다. 이번 편에서는 <b>은행</b>과 <b>이웃 나라</b>까지 갑니다.</p></div>'+
+            '<div class="nest-row"><div class="nest"><span class="lbl">우리나라</span><div class="inner"><div class="node"><span class="w">기관</span><span class="note">은행, 사법부, 감시탑…</span></div><div class="node"><span class="w">시민</span><span class="note">기관에 볼일을 보러 다닌다</span></div></div></div>'+
+            '<div class="nest ghost"><span class="lbl">이웃 나라</span><div class="inner"><div class="node"><span class="w">기관</span></div><div class="node"><span class="w">시민</span></div></div></div></div>',
+          src:[] },
+        { k:"T-2 · 법칙 1", h:"모든 일은 신청서와 처리 결과로 이루어진다",
+          body:
+            '<div class="prose"><p>시민은 볼일이 있으면 기관 창구에 직접 갑니다. 은행이라면 "내 잔액을 알려 주세요", "이 계좌로 10만 원 보내 주세요" 같은 볼일입니다.</p>'+
+            '<p>시민은 원하는 일을 '+d("신청서","HTTP 요청")+'에 적어 '+d("창구","서버")+'에 냅니다. 신청서 한 장에는 원하는 일이 하나 적힙니다. 창구는 그 일을 처리하고 '+d("처리 결과","HTTP 응답")+'를 돌려줍니다. "잔액은 120만 원입니다", "송금했습니다"처럼요.</p>'+
+            '<p>이 나라의 모든 일은 신청서 한 장과 처리 결과 한 장의 주고받기가 반복되는 것입니다.</p></div>'+
+            wflow([{w:"시민",note:"신청서: 내 잔액을 알려 주세요"},{arrow:"신청서 →<br>← 처리 결과"},{w:"은행 창구",note:"처리 결과: 잔액은 120만 원입니다"}]),
+          notes:[{t:"HTTP는 요청과 응답으로 이루어진 애플리케이션 계층 프로토콜이다.", s:"rfc9110"}],
+          src:[] },
+        { k:"T-3 · 법칙 2", h:"창구 직원은 손님을 기억하지 못한다",
+          body:
+            '<div class="prose"><p>'+d("창구 직원은 손님을 기억하지 못합니다","HTTP 무상태 (stateless)")+'. 신청서를 한 장씩 따로 처리하기 때문에, 방금 받은 신청서와 아까 받은 신청서가 같은 사람이 낸 것인지 모릅니다.</p>'+
+            '<p>그래서 문제가 생깁니다. 내 잔액을 알려 주려면 직원이 내가 누구인지 알아야 하는데, 직원은 매번 처음 보는 사람처럼 대합니다. 이번 이야기 전체가 이 문제를 푸는 이야기입니다.</p></div>'+
+            '<div class="callout"><b>이 나라의 규칙</b> · 직원이 건망증이 있어서가 아닙니다. 이 나라의 모든 창구 직원은 원래 지금 받은 신청서 한 장만 보고 일하도록 정해져 있습니다.</div>',
+          notes:[{t:"HTTP는 무상태 프로토콜로 정의된다. 각 요청 메시지의 의미는 그 메시지만 따로 보고 이해할 수 있다.", s:"rfc9110"}],
+          src:[] },
+        { k:"T-4 · 실제로는", h:"이 나라를 실제 이름으로 바꾸면", real:true,
+          body:
+            table([
+              ["우리나라","한 조직의 시스템 전체","예: 한 회사가 운영하는 서비스와 보안 장치 전부"],
+              ["기관","서비스 하나","예: 인터넷뱅킹 웹 서비스"],
+              ["시민","사용자","그 서비스를 쓰는 사람"],
+              ["이웃 나라","다른 조직","다른 회사의 시스템 (3단계에서 다룸)"],
+              ["시민이 직접 창구에 가서 신청서를 내고 결과를 받는 일","브라우저","실제로는 사용자가 아니라 브라우저가 사용자 대신 요청을 보내고 응답을 받는다"],
+              ["창구","서버","요청을 받아 처리하는 쪽"],
+              ["신청서 / 처리 결과","HTTP 요청 / 응답","브라우저가 원하는 일(예: 잔액 화면을 보여 달라, 송금해 달라)을 담아 서버에 보내는 요청과, 서버가 처리해서 돌려주는 응답 (T-2)"],
+              ["창구 직원은 손님을 기억하지 못한다","HTTP 무상태","서버는 요청 하나하나를 따로 처리하고, 앞선 요청을 누가 보냈는지 기억하지 않는다 (T-3)"]
+            ]),
+          src:[] }
+      ],
+      test:{type:"choice", tag:"튜토리얼 확인",
+        q:"은행 창구 직원이 신청서마다 \"누구세요?\"를 확인해야 하는 이유는?",
+        opts:["직원이 바빠서","직원은 신청서를 한 장씩 따로 처리해서, 앞 신청서를 낸 사람을 기억하지 못하기 때문에","시민이 매번 다른 창구에 가기 때문에","직원이 손님 얼굴을 잘 못 외워서"],
+        a:1,
+        ok:"맞습니다. HTTP는 무상태라서 요청 하나하나를 따로 봅니다. 그래서 \"이 요청을 누가 보냈나\"를 매번 알려 줄 장치가 필요합니다.",
+        no:"다시 보세요. 직원 개인의 사정이 아니라, 창구 직원이 신청서를 처리하는 방식 자체에 이유가 있습니다."}
+    },
+    {
+      id:"1", label:"1단계", role:"시민",
+      scene:{who:"나, 시민 김OO", where:"우리나라의 은행", what:"내 계좌 잔액을 조회하고 싶다"},
+      goal:"창구 직원이 나를 기억하지 못하는데도, 어떻게 매번 나를 알아보는가",
+      map:{here:"r-bank", path:true},
+      steps:[
+        { k:"1-1 · 신분 확인", h:"처음 한 번은 신분증을 보여준다",
+          body:
+            '<div class="prose"><p>창구 직원은 나를 기억하지 못합니다. 그래서 처음에 내가 누구인지 증명해야 합니다. 나는 신분증을 들고 창구에 가서 보여주고, 직원이 확인합니다.</p></div>'+
+            '<div class="callout">그런데 신청서를 낼 때마다 신분증을 다시 보여줘야 한다면? 잔액 조회 한 번, 거래 내역 한 번, 이체 한 번마다 신분증을 꺼내야 합니다. 그래서 다음 장치가 생겼습니다.</div>',
+          src:[] },
+        { k:"1-2 · 출입증 번호", h:"확인이 끝나면 오늘 쓸 출입증 번호를 받는다",
+          body:
+            '<div class="prose"><p>신분 확인이 끝나면 창구는 <b>출입증 번호</b>를 하나 발급하고, 자기 쪽 <b>장부</b>에 "이 번호는 김OO"라고 적어 둡니다. 다음 신청서부터는 신분증 대신 이 번호만 내면 됩니다.</p></div>'+
+            wflow([{w:"시민",note:"신분증 제시"},{arrow:"→"},{w:"창구",note:"확인 후 번호 발급, 장부에 기록"},{arrow:"←"},{w:"출입증 번호"}])+
+            '<div class="callout">여기서 중요한 성질이 하나 생깁니다. 창구는 번호만 보고 장부를 찾아 "아, 김OO님" 합니다. 즉 <b>번호를 가진 사람은 신분증을 보여준 사람과 똑같이 대접받습니다.</b> 2단계 사건이 여기서 출발합니다.</div>',
+          src:[] },
+        { k:"1-3 · 들고 다니기", h:"출입증은 목걸이로 받는다",
+          body:
+            '<div class="prose"><p>창구는 출입증 번호를 <b>목걸이</b>에 담아 내 목에 걸어 줍니다. 그 뒤로 내가 같은 은행 창구에 신청서를 낼 때마다, 창구는 목에 걸린 목걸이를 보고 번호를 확인합니다. 나는 따로 꺼내 보일 필요가 없습니다.</p>'+
+            '<p>목걸이는 그것을 걸어 준 은행 창구에서만 확인됩니다. 다른 기관 창구에는 그 기관이 걸어 준 목걸이가 따로 있습니다.</p></div>'+
+            wflow([{w:"창구",note:"번호를 담은 목걸이를 걸어 줌"},{arrow:"→"},{w:"시민",note:"목에 건 채로 다님"},{arrow:"신청서와 함께 →"},{w:"창구",note:"목걸이 확인 → 장부 조회 → 김OO"}]),
+          src:[] },
+        { k:"1-4 · 숨기기", h:"목걸이는 봉인되어 있다",
+          body:
+            '<div class="prose"><p>은행은 창구에서 시민에게 <b>안내문</b>을 건넵니다. 안내문에는 시민이 그대로 따라 하는 <b>지시문</b>이 적혀 있습니다. 대부분은 은행이 쓴 정상 지시문입니다.</p>'+
+            '<p>그런데 누군가 안내문에 <b>가짜 지시문</b>을 몰래 끼워 넣으면, 그 지시문이 "목걸이 안의 번호를 이 종이에 적어 주세요"라고 시킬 수 있습니다. 시민은 안내문에 적힌 대로 따르니까요.</p>'+
+            '<p>그래서 창구는 목걸이를 <b>봉인</b>해서 걸어 줄 수 있습니다. 봉인된 목걸이는 창구만 읽을 수 있고, 시민 본인도 열어 볼 수 없습니다. 가짜 지시문을 따르려 해도 번호를 적어 줄 수가 없습니다.</p></div>'+
+            '<div class="callout">봉인은 가짜 지시문이 끼워지는 것 자체를 막지는 못합니다. 끼워지더라도 <b>출입증 번호만은 빼내지 못하게</b> 할 뿐입니다.</div>',
+          src:[] },
+        { k:"1-5 · 실제로는", h:"이 이야기를 실제 이름으로 바꾸면", real:true,
+          body:
+            table([
+              ["신분 확인","로그인 · 인증","아이디·비밀번호 등으로 사용자가 누구인지 확인"],
+              ["출입증 번호","세션 ID","인증이 끝난 뒤 서버가 발급하는 식별값"],
+              ["창구의 장부","서버의 세션 저장소","세션 ID와 사용자를 연결해 둔 기록"],
+              ["목걸이","쿠키","서버가 맡기고 브라우저가 저장해 두는 이름-값 쌍"],
+              ["목걸이를 걸어 주기","Set-Cookie 헤더","서버가 응답에 실어 브라우저에 쿠키를 맡김"],
+              ["창구가 목걸이를 확인하기","Cookie 헤더","브라우저가 이후 요청마다 쿠키를 자동으로 붙여 보냄"],
+              ["안내문","웹 페이지 (HTML)","서버가 브라우저에 보내는 화면"],
+              ["지시문","스크립트 (JavaScript)","페이지 안에서 브라우저가 실행하는 코드"],
+              ["가짜 지시문 끼워 넣기","XSS","공격자의 스크립트가 페이지 안에서 실행되게 하는 공격"],
+              ["봉인","HttpOnly 속성","스크립트에는 쿠키를 보여주지 않게 하는 쿠키 속성"],
+              ["시민이 직접 하는 일 (신청서 내기, 목걸이 걸고 다니기, 안내문 따르기)","브라우저","실제로는 브라우저가 사용자 대신 한다. 요청을 보내고, 쿠키를 저장했다가 자동으로 붙이고, 페이지의 스크립트를 실행한다"]
+            ]),
+          notes:[
+            {t:"세션 ID는 그 순간 애플리케이션이 쓰는 가장 강한 인증 수단과 같은 효력을 가진다. (1-2 \"번호를 가진 사람은 신분증을 보여준 사람과 똑같이 대접받는다\")", s:"owasp"},
+            {t:"서버는 Set-Cookie 헤더로 쿠키를 브라우저에 맡기고, 브라우저는 이후 요청에 Cookie 헤더로 되돌려 보낸다. (1-3 목걸이)", s:"rfc6265"},
+            {t:"HttpOnly 속성은 스크립트처럼 HTTP가 아닌 경로로 쿠키를 보여줄 때 그 쿠키를 빼라고 브라우저에 지시한다. (1-4)", s:"rfc6265"}
+          ],
+          src:[] }
+      ],
+      test:{type:"match", tag:"1단계 확인 · 짝 맞추기",
+        q:"이 나라의 이름과 실제 이름을 짝지어 보세요.",
+        rows:[["창구","서버"],["출입증 번호","세션 ID"],["목걸이","쿠키"],["봉인","HttpOnly"],["가짜 지시문 끼워 넣기","XSS"],["신분 확인","로그인 · 인증"]],
+        ok:"모두 맞았습니다. 2단계가 열렸습니다.",
+        no:"틀린 짝이 있습니다. 빨간 테두리를 다시 보세요."}
+    },
+    {
+      id:"2", label:"2단계", role:"컨설턴트",
+      scene:{who:"나, 은행의 보안 컨설턴트", where:"우리나라의 은행", what:"시민 박OO의 피해 신고를 받고, 어디서 뚫렸는지 찾는다"},
+      goal:"증상에서 출발해 원인을 거슬러 올라가는 법",
+      map:{here:"r-bank", path:true},
+      steps:[
+        { k:"2-1 · 신고", h:"\"제가 하지 않은 이체가 있어요\"",
+          body:
+            '<div class="prose"><p>시민 박OO가 신고했습니다. 어젯밤 자기 계좌에서 모르는 이체가 나갔다고 합니다.</p>'+
+            '<p>박OO의 말: "신분증은 잃어버린 적도, 남에게 보여준 적도 없어요. 은행에서 오는 확인 문자도 안 왔어요."</p></div>'+
+            '<div class="callout">지금 역할은 시민이 아니라 컨설턴트입니다. 증상에서 출발해 어디서 뚫렸는지 거슬러 올라갑니다. 다음 화면에서 단서를 하나씩 열어 보세요.</div>',
+          src:[] },
+        { k:"2-2 · 단서", h:"기록을 열어 본다",
+          body:'<div id="clues" class="opts"></div>',
+          src:[] },
+        { k:"2-3 · 원인과 조치", h:"이미 발급된 출입증이 쓰였다",
+          body:
+            '<div class="prose"><p>출입증 번호는 신분 확인이 <b>끝난 뒤에</b> 발급됩니다. 그래서 출입증을 들고 오면 창구는 신분증도, 확인 문자도 다시 요구하지 않습니다. 이미 확인이 끝난 사람으로 대하니까요.</p>'+
+            '<p>이번에는 박OO의 출입증 번호가 <b>신청서 주소 칸</b>에 적혀 있었고, 그 주소가 은행의 <b>출입 기록부</b>에 그대로 남았습니다. 기록부를 볼 수 있는 누군가가 번호를 옮겨 적었고, 그 번호로 창구에 와서 박OO 행세를 한 것입니다.</p></div>'+
+            '<h3>조치</h3>'+
+            '<div class="opts">'+
+              '<div class="opt">그 출입증 번호를 장부에서 지워 즉시 못 쓰게 만든다</div>'+
+              '<div class="opt">출입증 번호를 주소 칸에 적지 않는다. 봉인된 목걸이로만 주고받는다</div>'+
+              '<div class="opt">신분 확인을 할 때마다 새 번호를 발급한다. 누가 미리 알아 둔 번호를 그대로 쓰게 두지 않는다</div>'+
+            '</div>',
+          src:[] },
+        { k:"2-4 · 실제로는", h:"이 사건을 실제 이름으로 바꾸면", real:true,
+          body:
+            table([
+              ["확인 문자","2단계 인증 (MFA)","비밀번호 외에 한 번 더 확인하는 인증"],
+              ["출입증 번호를 빼내기","세션 쿠키 탈취","MITRE ATT&CK T1539"],
+              ["빼낸 번호로 행세하기","탈취한 세션 쿠키 사용","MITRE ATT&CK T1550.004"],
+              ["신청서 주소 칸","URL (쿼리 문자열)","요청 주소. 여러 곳에 기록으로 남는다"],
+              ["출입 기록부","서버 접근 로그","서버가 받은 요청 주소를 남기는 기록"],
+              ["장부에서 번호 지우기","세션 무효화","서버에서 그 세션을 폐기"],
+              ["주소 칸 대신 봉인된 목걸이","HttpOnly 쿠키로만 세션 ID 전달","URL에 세션 ID를 넣지 않음"],
+              ["확인할 때마다 새 번호","로그인 후 세션 ID 재발급","세션 고정 공격 방지"]
+            ]),
+          notes:[
+            {t:"공격자는 웹 세션 쿠키를 훔쳐, 자격 증명 없이 인증된 사용자로 웹 서비스에 접근할 수 있다.", s:"t1539"},
+            {t:"훔친 세션 쿠키로 인증할 수 있으며, 세션이 이미 인증된 상태라 일부 다중 인증을 우회한다. (확인 문자가 오지 않은 이유)", s:"t1550"},
+            {t:"세션 ID를 URL에 두면 로그, 브라우저 방문 기록, 북마크, Referer 헤더, 검색 엔진으로 새어 나갈 수 있다. 권한 수준이 바뀔 때는 세션 ID를 반드시 새로 발급해야 한다.", s:"owasp"}
+          ],
+          src:[] }
+      ],
+      test:{type:"diag", tag:"2단계 확인 · 진단",
+        q:"신분증도 그대로이고 확인 문자도 오지 않았습니다. 범인이 쓴 것은 무엇일까요? 고른 뒤 이유를 적어 보세요.",
+        opts:["박OO의 신분증","확인 문자를 건너뛰는 비밀 코드","이미 발급된 박OO의 출입증 번호","창구 직원의 실수"],
+        a:2,
+        model:"출입증 번호(세션 ID)는 신분 확인(인증)이 끝난 뒤 발급되고, 번호를 가진 사람은 신분증을 보여준 사람과 똑같이 대접받는다. 그래서 번호만 있으면 신분증(비밀번호)도 확인 문자(2단계 인증)도 다시 거치지 않는다. 신분증 사용 흔적과 확인 문자 요청이 없는 것이 그 증거다.",
+        ok:"맞습니다. 아래 모범 답과 내 이유를 비교해 보세요.",
+        no:"다시 보세요. 신분증이 쓰였다면 무엇이 남았어야 하나요? 확인 문자는 왜 오지 않았을까요?"}
+    },
+    {
+      id:"3", label:"3단계", role:"나라 운영자",
+      scene:{who:"나, 이 나라의 운영자", where:"우리나라 국경, 그리고 이웃 나라", what:"이웃 나라 여권을 받아 줄지, 받는다면 무엇을 확인할지 정한다"},
+      goal:"다른 조직이 확인한 신원을 믿는 방법",
+      map:{here:"r-nb", path3:true},
+      steps:[
+        { k:"3-1 · 요청", h:"\"이웃 나라 신분증으로 하면 안 돼요?\"",
+          body:
+            '<div class="prose"><p>우리 은행에 처음 온 시민이 말합니다. "이웃 나라에서 이미 신분 확인을 받았는데, 그걸로 들어가면 안 될까요?"</p>'+
+            '<p>이웃 나라는 다른 나라입니다. 우리 창구가 그 나라 국민을 직접 확인한 적은 없습니다. 그런데도 믿어도 될까요? 지금 나는 이 나라의 운영자로서 이걸 정해야 합니다.</p></div>',
+          src:[] },
+        { k:"3-2 · 여권", h:"이웃 나라가 확인하고, 우리는 여권을 본다",
+          body:
+            '<div class="prose"><p>시민은 이웃 나라 창구에 가서 신분 확인을 받습니다. 이웃 나라는 확인 결과를 담은 <b>여권</b>을 발급하고, 시민은 그 여권을 들고 우리 창구에 냅니다.</p>'+
+            '<p>우리 나라는 그 시민을 직접 확인하지 않습니다. <b>이웃 나라가 확인했다는 증명</b>을 보고 판단합니다. 판단이 끝나면 우리 창구는 1단계처럼 출입증 번호를 발급합니다.</p></div>'+
+            wflow([{w:"시민"},{arrow:"→"},{w:"이웃 나라 창구",note:"신분 확인, 여권 발급"},{arrow:"여권 →"},{w:"우리 은행 창구",note:"여권 확인 후 출입증 발급"}]),
+          src:[] },
+        { k:"3-3 · 확인할 것", h:"여권을 받을 때 세 가지를 확인한다",
+          body:
+            '<div class="prose"><p>여권을 그냥 믿는 것이 아닙니다. 받을 때마다 세 가지를 확인합니다.</p></div>'+
+            '<div class="opts">'+
+              '<div class="opt"><div><b>발급국이 맞는가</b> — 여권에 적힌 발급국이 우리가 믿기로 한 그 나라와 정확히 같아야 한다.</div></div>'+
+              '<div class="opt"><div><b>우리 나라 앞으로 발급됐는가</b> — 다른 나라에 내려고 받은 여권을 우리에게 내밀면 안 된다. 수신국 칸에 우리 나라가 적혀 있어야 한다.</div></div>'+
+              '<div class="opt"><div><b>위조 방지 서명이 진짜인가</b> — 여권에는 반드시 발급국의 서명이 찍혀 나온다. 그 서명이 진짜인지 확인한다.</div></div>'+
+            '</div>'+
+            '<div class="callout">우리 나라가 이웃 나라 여권을 믿는 이유는 "이웃 나라를 믿어서"만이 아닙니다. 미리 그 나라와 관계를 맺어 두고, 여권이 올 때마다 위 세 가지를 확인하기 때문입니다.</div>',
+          src:[] },
+        { k:"3-4 · 실제로는", h:"이 이야기를 실제 이름으로 바꾸면", real:true,
+          body:
+            table([
+              ["이웃 나라 신분증으로 들어가기","소셜 로그인 · SSO","예: \"구글 계정으로 로그인\""],
+              ["여권 협정","OpenID Connect (OIDC)","OAuth 2.0 위에 얹힌 신원 확인 표준"],
+              ["이웃 나라 (발급국)","OpenID Provider · IdP","사용자를 인증하고 결과를 발급하는 쪽"],
+              ["우리 나라 (입국국)","Client · RP","발급된 결과를 받아 신원을 확인하는 쪽"],
+              ["여권","ID 토큰 (JWT)","인증 결과와 사용자 정보를 담은 토큰"],
+              ["미리 관계 맺기","Client 등록 (client_id)","IdP에 우리 서비스를 등록해 두는 것"],
+              ["발급국 확인","iss 검증","발급자가 기대한 IdP와 정확히 같은지"],
+              ["수신국 확인","aud 검증","토큰이 우리 client_id 앞으로 발급됐는지"],
+              ["위조 방지 서명 확인","JWS 서명 검증","IdP 서명이 유효한지"]
+            ]),
+          notes:[
+            {t:"OpenID Connect는 OAuth 2.0 위의 신원 계층으로, 인증 서버가 수행한 인증을 근거로 클라이언트가 최종 사용자의 신원을 확인할 수 있게 한다.", s:"oidc"},
+            {t:"ID 토큰은 반드시 JWS로 서명되어야 한다. 받는 쪽은 발급자(iss)가 정확히 일치하는지, 수신자(aud)에 자기 client_id가 있는지, 서명이 유효한지를 반드시 검증해야 한다(3.1.3.7절). (3-3의 세 가지)", s:"oidc"}
+          ],
+          src:[] }
+      ],
+      test:{type:"write", tag:"3단계 확인 · 설명하기",
+        q:"우리 나라는 왜 이웃 나라가 확인한 신원을 믿을 수 있나요? 여권을 받을 때 무엇을 확인하는지 포함해서 내 말로 설명해 보세요.",
+        model:"이웃 나라(IdP)가 신원을 확인하고 그 결과를 여권(ID 토큰)으로 발급한다. 우리 나라(Client)는 미리 그 나라와 관계를 맺어 두고(등록), 여권을 받을 때마다 ① 발급국이 우리가 믿기로 한 나라와 같은지(iss) ② 우리 나라 앞으로 발급됐는지(aud) ③ 발급국의 서명이 진짜인지(JWS 서명)를 확인한다. 셋이 모두 맞을 때만 그 신원을 받아들인다.",
+        min:30}
+    }
+  ];
+
+  // 장면 화면을 각 단계의 첫 화면으로 끼운다
+  STAGES.forEach(function(s){
+    s.steps.unshift({ k:"장면", h:"", scene:true, src:[] });
+  });
+
+  // ---------- 상태 ----------
+  var KEY = "secworld-identity-v1";
+  var state = {stage:0, step:0, done:{}};
+  try { var raw = localStorage.getItem(KEY); if (raw){ var s = JSON.parse(raw); if (s && typeof s === "object"){ state.stage = Math.min(Math.max(0, s.stage|0), STAGES.length-1); state.step = Math.max(0, s.step|0); state.done = s.done && typeof s.done === "object" ? s.done : {}; } } } catch(e){}
+  function save(){ try { localStorage.setItem(KEY, JSON.stringify(state)); } catch(e){} }
+  function unlocked(i){ return i === 0 || !!state.done[STAGES[i-1].id]; }
+  if (!unlocked(state.stage)) { state.stage = 0; state.step = 0; }
+
+  // ---------- 렌더 ----------
+  var trackEl = document.getElementById("track");
+  var questEl = document.getElementById("questBody");
+
+  function renderTrack(){
+    trackEl.textContent = "";
+    STAGES.forEach(function(s, i){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "stamp";
+      var st = state.done[s.id] ? "done" : (unlocked(i) ? "open" : "locked");
+      b.dataset.state = st;
+      if (st === "locked") b.disabled = true;
+      if (i === state.stage) b.setAttribute("aria-current","step");
+      var t = document.createElement("b"); t.textContent = s.label;
+      var sm = document.createElement("small"); sm.textContent = st === "done" ? "통과" : st === "locked" ? "잠김" : s.role + " 시점";
+      b.append(t, sm);
+      b.addEventListener("click", function(){ state.stage = i; state.step = 0; save(); renderLearning(); });
+      trackEl.append(b);
+    });
+  }
+
+  var HL = {
+    "t":  {r:["bank"], pin:"bank"},
+    "1":  {r:["bank"], pin:"bank"},
+    "2":  {r:["bank"], pin:"bank"},
+    "3":  {r:["nb","auth"], h:["nb-auth"], pin:"auth"},
+    "T-1 · 이 나라": {r:["bank","nb"], all:true},
+    "T-4 · 실제로는": {r:["bank"]},
+    "1-1 · 신분 확인": {r:["bank","auth"]},
+    "1-5 · 실제로는": {r:["bank","auth"]},
+    "2-2 · 단서": {r:["bank","ctrl","auth"], h:["bank-ctrl","auth-ctrl"]},
+    "2-4 · 실제로는": {r:["bank","ctrl"], h:["bank-ctrl"]},
+    "3-2 · 여권": {r:["nb","auth","bank"], h:["nb-auth","auth-door","door-bank"]},
+    "3-3 · 확인할 것": {r:["auth"]},
+    "3-4 · 실제로는": {r:["nb","auth"], h:["nb-auth"]}
+  };
+
+  var learning = false;
+  var questBox = document.getElementById("quest");
+  function renderMap(){ render(); }
+  function renderLearning(){ renderTrack(); renderQuest(); }
+  var mapBox = document.querySelector(".mapbox"), qOpen = document.getElementById("qOpen");
+  function setFold(folded){ mapBox.classList.toggle("collapsed", folded); qOpen.hidden = !folded; }
+  function openLearning(){ learning = true; selected = null; questBox.hidden = false; mapBox.classList.add("learning"); setFold(false); renderLearning(); }
+  document.getElementById("qClose").addEventListener("click", function(){ learning = false; questBox.hidden = true; mapBox.classList.remove("learning"); setFold(false); render(); });
+  document.getElementById("qFold").addEventListener("click", function(){ setFold(true); });
+  qOpen.addEventListener("click", function(){ setFold(false); });
+  function el(html){ var t = document.createElement("template"); t.innerHTML = html; return t.content; }
+
+  function renderQuest(){
+    var s = STAGES[state.stage];
+    var steps = s.steps;
+    var onTest = state.step >= steps.length;
+    questEl.textContent = "";
+
+    renderMap();
+    var head = document.createElement("div");
+    head.style.display = "grid"; head.style.gap = "10px";
+    var cur = !onTest ? steps[state.step] : null;
+    if (!(cur && cur.scene)){
+      head.append(el('<div class="scene-mini"><span>누가 <b>'+s.scene.who+'</b></span><span>어디서 <b>'+s.scene.where+'</b></span><span>무엇을 <b>'+s.scene.what+'</b></span></div>'));
+    }
+    var dots = document.createElement("div"); dots.className = "steps"; dots.setAttribute("aria-label","진행");
+    for (var i = 0; i <= steps.length; i++){
+      (function(i){
+        var b = document.createElement("button"); b.type = "button"; b.className = "dot";
+        b.setAttribute("aria-label", i < steps.length ? steps[i].k : "확인 테스트");
+        if (i === state.step) b.setAttribute("aria-current","step"); else if (i < state.step) b.classList.add("seen");
+        b.addEventListener("click", function(){ state.step = i; save(); renderQuest(); });
+        dots.append(b);
+      })(i);
+    }
+    head.append(dots);
+    questEl.append(head);
+
+    var card = document.createElement("section"); card.className = "card";
+    if (!onTest){
+      var st = steps[state.step];
+      if (st.scene){
+        card.append(el(
+          '<div class="scene-hero"><div class="kicker">'+s.label+' · 장면</div>'+
+          '<h2>먼저 이 장면을 머릿속에 두세요</h2>'+
+          '<dl class="big"><dt>누가</dt><dd>'+s.scene.who+'</dd><dt>어디서</dt><dd>'+s.scene.where+'</dd><dt>무엇을</dt><dd>'+s.scene.what+'</dd></dl>'+
+          '<p class="goal">이번 단계에서 알게 될 것 · <b>'+s.goal+'</b></p></div>'));
+      } else {
+        if (!st.real){
+          card.classList.add("story");
+          card.append(el('<div class="kicker">'+st.k+'</div><div class="dialog"><span class="speaker">이야기</span><h2>'+st.h+'</h2>'+st.body+'</div>'));
+        } else {
+          card.append(el('<div class="kicker">'+st.k+'<span class="realtag">실제 대응</span></div><h2>'+st.h+'</h2>'+st.body));
+        }
+      }
+      var terms = card.querySelectorAll(".term");
+      if (terms.length){
+        var seen = {}, list = [];
+        terms.forEach(function(t){
+          var key = t.textContent + "|" + t.dataset.real;
+          if (!seen[key]){ list.push({w:t.textContent, r:t.dataset.real}); seen[key] = list.length; }
+          var sup = document.createElement("sup"); sup.textContent = String(seen[key]); t.append(sup);
+          t.setAttribute("aria-label", t.firstChild.textContent + ", 실제 이름 " + t.dataset.real);
+        });
+        var cap = document.createElement("ol"); cap.className = "caption";
+        list.forEach(function(x){ var li = document.createElement("li"); li.textContent = x.w + " = " + x.r; cap.append(li); });
+        card.append(cap);
+      }
+    } else {
+      card.append(renderTest(s));
+    }
+    questEl.append(card);
+
+    if (s.id === "2" && !onTest && steps[state.step].k === "2-2 · 단서") renderClues();
+
+    var nav = document.createElement("div"); nav.className = "nav";
+    var prev = document.createElement("button"); prev.type = "button"; prev.className = "btn ghost"; prev.textContent = "이전";
+    prev.disabled = state.step === 0;
+    prev.addEventListener("click", function(){ state.step--; save(); renderQuest(); });
+    nav.append(prev);
+    if (!onTest){
+      var next = document.createElement("button"); next.type = "button"; next.className = "btn";
+      next.textContent = state.step === steps.length - 1 ? "확인 테스트로" : "다음";
+      next.addEventListener("click", function(){ state.step++; save(); renderQuest(); });
+      nav.append(next);
+    } else if (state.done[s.id] && state.stage < STAGES.length - 1){
+      var go = document.createElement("button"); go.type = "button"; go.className = "btn go";
+      go.textContent = STAGES[state.stage+1].label + "로";
+      go.addEventListener("click", function(){ state.stage++; state.step = 0; save(); renderLearning(); });
+      nav.append(go);
+    }
+    questEl.append(nav);
+
+    if (!onTest){
+      var cur2 = steps[state.step];
+      var notes = cur2.notes || [];
+      if (notes.length){
+        var ev = document.createElement("section"); ev.className = "evidence";
+        var eh = document.createElement("h3"); eh.textContent = "근거"; ev.append(eh);
+        var ol = document.createElement("ol");
+        notes.forEach(function(n){
+          var li = document.createElement("li");
+          var p = document.createElement("p"); p.textContent = n.t;
+          var a = document.createElement("a"); a.href = SRC[n.s].u; a.target = "_blank"; a.rel = "noopener"; a.textContent = SRC[n.s].t;
+          li.append(p, a); ol.append(li);
+        });
+        ev.append(ol); questEl.append(ev);
+      }
+    }
+  }
+
+  // 2단계 단서
+  var CLUES = [
+    {t:"신분증 확인 기록", f:"어젯밤 박OO의 신분증으로 신분 확인을 한 기록이 없음. 실패한 시도도 없음."},
+    {t:"확인 문자 발송 기록", f:"어젯밤에는 확인 문자를 보낼 일 자체가 없었음."},
+    {t:"출입증 사용 기록", f:"어젯밤 이체 요청에 박OO의 출입증 번호가 쓰였음. 그런데 요청이 온 곳은 박OO가 평소 쓰는 곳이 아님."},
+    {t:"출입 기록부", f:"박OO의 출입증 번호가 신청서 주소 칸에 적힌 채로 기록부에 그대로 남아 있음. 기록부를 볼 수 있는 사람이면 누구나 번호를 알 수 있었음."}
+  ];
+  function renderClues(){
+    var box = document.getElementById("clues"); if (!box) return;
+    CLUES.forEach(function(c){
+      var w = document.createElement("div"); w.className = "clue";
+      var h = document.createElement("b"); h.textContent = c.t;
+      var b = document.createElement("button"); b.type = "button"; b.textContent = "열어 보기";
+      var f = document.createElement("p"); f.className = "found"; f.textContent = c.f; f.hidden = true;
+      b.addEventListener("click", function(){ f.hidden = false; b.hidden = true; });
+      w.append(h, b, f); box.append(w);
+    });
+  }
+
+  function pass(s){ state.done[s.id] = true; save(); renderTrack(); renderMap(); }
+
+  function renderTest(s){
+    var t = s.test;
+    var box = document.createElement("div"); box.className = "test";
+    var tag = document.createElement("div"); tag.className = "tag"; tag.textContent = t.tag;
+    var q = document.createElement("p"); q.style.fontWeight = "600"; q.textContent = t.q;
+    box.append(tag, q);
+    var fb = document.createElement("div"); fb.className = "fb"; fb.hidden = true;
+
+    if (t.type === "choice" || t.type === "diag"){
+      var opts = document.createElement("div"); opts.className = "opts";
+      t.opts.forEach(function(o, i){
+        var lab = document.createElement("label"); lab.className = "opt";
+        var r = document.createElement("input"); r.type = "radio"; r.name = "q-"+s.id; r.value = String(i); r.id = "q-"+s.id+"-"+i;
+        var sp = document.createElement("span"); sp.textContent = o;
+        lab.append(r, sp); opts.append(lab);
+      });
+      box.append(opts);
+      var reason;
+      if (t.type === "diag"){
+        var rl = document.createElement("label"); rl.htmlFor = "reason-2"; rl.textContent = "이유";
+        reason = document.createElement("textarea"); reason.id = "reason-2"; reason.placeholder = "왜 그렇게 판단했는지 적어 보세요";
+        box.append(rl, reason);
+      }
+      var check = document.createElement("button"); check.type = "button"; check.className = "btn"; check.textContent = "확인";
+      check.style.justifySelf = "start";
+      var model = document.createElement("div"); model.className = "fb"; model.hidden = true;
+      check.addEventListener("click", function(){
+        var sel = box.querySelector('input[name="q-'+s.id+'"]:checked');
+        fb.hidden = false;
+        if (!sel){ fb.className = "fb no"; fb.textContent = "답을 하나 골라 주세요."; return; }
+        if (t.type === "diag" && reason.value.trim().length < 10){ fb.className = "fb no"; fb.textContent = "이유를 한두 문장 적어 주세요. 고르기만 하면 설명 연습이 되지 않습니다."; return; }
+        var right = Number(sel.value) === t.a;
+        fb.className = "fb " + (right ? "ok" : "no");
+        fb.textContent = right ? t.ok : t.no;
+        if (right){
+          if (t.type === "diag"){ model.hidden = false; model.textContent = "모범 답: " + t.model; }
+          pass(s); renderQuestNavOnly();
+        }
+      });
+      box.append(check, fb, model);
+    }
+
+    if (t.type === "match"){
+      var reals = t.rows.map(function(r){ return r[1]; });
+      var shuffled = reals.slice().sort(function(a,b){ return a.localeCompare(b, "ko"); });
+      var grid = document.createElement("div"); grid.className = "match";
+      var selects = [];
+      t.rows.forEach(function(r, i){
+        var row = document.createElement("div"); row.className = "mrow";
+        var lab = document.createElement("label"); lab.htmlFor = "m-"+i; lab.textContent = r[0];
+        lab.style.fontWeight = "600";
+        var sel = document.createElement("select"); sel.id = "m-"+i;
+        var o0 = document.createElement("option"); o0.value = ""; o0.textContent = "실제 이름 고르기"; sel.append(o0);
+        shuffled.forEach(function(x){ var o = document.createElement("option"); o.value = x; o.textContent = x; sel.append(o); });
+        row.append(lab, sel); grid.append(row); selects.push(sel);
+      });
+      box.append(grid);
+      var mc = document.createElement("button"); mc.type = "button"; mc.className = "btn"; mc.textContent = "확인"; mc.style.justifySelf = "start";
+      mc.addEventListener("click", function(){
+        var all = true;
+        selects.forEach(function(sel, i){
+          var ok = sel.value === t.rows[i][1];
+          sel.style.borderColor = ok ? "var(--ok)" : "var(--warn)";
+          if (!ok) all = false;
+        });
+        fb.hidden = false; fb.className = "fb " + (all ? "ok" : "no"); fb.textContent = all ? t.ok : t.no;
+        if (all){ pass(s); renderQuestNavOnly(); }
+      });
+      box.append(mc, fb);
+    }
+
+    if (t.type === "write"){
+      var wl = document.createElement("label"); wl.htmlFor = "w-3"; wl.textContent = "내 설명";
+      var ta = document.createElement("textarea"); ta.id = "w-3"; ta.placeholder = "발급국, 수신국, 서명 중 무엇을 왜 확인하는지 포함해서";
+      var row = document.createElement("div"); row.style.display = "flex"; row.style.flexWrap = "wrap"; row.style.gap = "8px";
+      var show = document.createElement("button"); show.type = "button"; show.className = "btn"; show.textContent = "모범 답과 비교하기";
+      var ask = document.createElement("button"); ask.type = "button"; ask.className = "btn ghost"; ask.textContent = "Claude에게 채점받기"; ask.hidden = true;
+      var model2 = document.createElement("div"); model2.className = "fb"; model2.hidden = true;
+      var ai = document.createElement("div"); ai.className = "fb ai"; ai.hidden = true;
+      show.addEventListener("click", function(){
+        if (ta.value.trim().length < t.min){ fb.hidden = false; fb.className = "fb no"; fb.textContent = "먼저 내 말로 설명을 적어 주세요. 모범 답을 먼저 보면 설명 테스트가 의미 없어집니다."; return; }
+        fb.hidden = true;
+        model2.hidden = false; model2.className = "fb ok"; model2.textContent = "모범 답: " + t.model;
+        pass(s); renderQuestNavOnly();
+      });
+      row.append(show, ask);
+      box.append(wl, ta, row, fb, model2, ai);
+
+      // Claude 채점 — claude.ai에서 열었을 때만 보인다
+      if (window.claude && typeof window.claude.use === "function"){
+        window.claude.use("sample").then(function(sample){
+          if (!sample) return;
+          ask.hidden = false;
+          ask.addEventListener("click", function(){
+            var ans = ta.value.trim();
+            if (ans.length < t.min){ fb.hidden = false; fb.className = "fb no"; fb.textContent = "먼저 내 말로 설명을 적어 주세요."; return; }
+            ask.disabled = true; ai.hidden = false; ai.textContent = "읽는 중...";
+            var prompt = "너는 보안 개념 학습의 채점자다. 학습자가 쓴 설명을 아래 기준과 대조해 한국어로 짧게 피드백해라.\n"+
+              "형식: 첫 줄에 '충족 n/3'. 이어서 기준마다 한 줄씩 [충족] 또는 [빠짐]과 근거. 마지막에 고칠 점 한 문장. 칭찬이나 인사는 넣지 마라.\n\n"+
+              "질문: " + t.q + "\n\n기준:\n1) 이웃 나라(IdP)가 인증하고 결과를 여권(ID 토큰)으로 발급한다는 구조를 설명했는가\n2) 받는 쪽이 발급국(iss)과 수신국(aud)을 확인한다는 것을 말했는가\n3) 발급국 서명을 검증한다는 것을 말했는가\n\n"+
+              "학습자 답:\n" + ans.slice(0, 4000);
+            sample(prompt, {modelTier:"quick", onText:function(u){ ai.textContent = u.text; }})
+              .then(function(r){ ai.textContent = r.text; })
+              .catch(function(e){
+                var c = e && e.code;
+                if (c === "not_granted" || c === "sampling_disabled" || c === "not_declared" || c === "capability_disabled" || c === "capability_removed"){ ask.hidden = true; ai.textContent = "이 화면에서는 Claude 채점을 쓸 수 없습니다. 모범 답과 직접 비교해 주세요."; }
+                else if (c === "rate_limited"){ ai.textContent = "요청이 많습니다. 잠시 뒤 다시 눌러 주세요."; }
+                else if (c === "cancelled"){ ai.hidden = true; }
+                else { ai.textContent = (e && e.text ? e.text + "\n\n" : "") + "채점이 중간에 끊겼습니다. 다시 눌러 주세요."; }
+              })
+              .then(function(){ ask.disabled = false; });
+          });
+        }).catch(function(){});
+      }
+    }
+    return box;
+  }
+
+  function renderQuestNavOnly(){
+    // 통과 후 다음 단계 버튼만 다시 그린다 (입력한 답은 그대로 둔다)
+    var nav = questEl.querySelector(".nav"); if (!nav) return;
+    if (nav.querySelector(".go")) return;
+    if (state.stage < STAGES.length - 1){
+      var go = document.createElement("button"); go.type = "button"; go.className = "btn go";
+      go.textContent = STAGES[state.stage+1].label + "로";
+      go.addEventListener("click", function(){ state.stage++; state.step = 0; save(); renderLearning(); });
+      nav.append(go);
+    } else {
+      var end = document.createElement("span"); end.className = "go"; end.textContent = "신원을 모두 통과했습니다.";
+      end.style.alignSelf = "center"; end.style.color = "var(--ok)";
+      nav.append(end);
+    }
+  }
+
+
+  render();
+})();
+</script>

@@ -1,0 +1,2 @@
+# 줄바꿈은 저장소와 작업본 모두 LF로 둔다 (Windows의 core.autocrlf 설정과 무관하게)
+* text=auto eol=lf

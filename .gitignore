@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.vercel/
+*.local
+.DS_Store
+Thumbs.db
+
+# 비공개 문서 (커밋하지 않는다. 이 PC에만 있다)
+docs/private/

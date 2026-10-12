@@ -1,0 +1,10 @@
+
+# <type>(<scope>): <설명>   ← 한국어, 50자 안팎(최대 72), 명사형으로 끝, 마침표 없음
+#
+# type : feat fix docs content refactor style build test chore revert
+# scope: map panel search toc progress world s01 … (생략 가능)
+#
+# 본문(선택): 무엇을, 왜 바꿨는지. 72자 안팎에서 줄바꿈
+# 꼬리말(선택): BREAKING CHANGE: <설명>
+#
+# 규칙 전문: docs/SECWORLD_02_COMMIT.md
