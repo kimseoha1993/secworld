@@ -314,3 +314,42 @@ label.opt { cursor: pointer }
 .fb.ok { border-left: 3px solid var(--ok) }
 .fb.no { border-left: 3px solid var(--warn) }
 .fb.ai { white-space: pre-wrap }
+
+/* ===== 학습 머리 한 줄 · 아래 고정 이동 · 이름–값 목록 · 세로 흐름 ===== */
+.lhead { display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--line); padding-bottom: 10px }
+.lhead-btn { flex: 1 1 auto; min-width: 0; display: flex; justify-content: space-between; align-items: center; gap: 8px; border: 0; background: transparent; color: var(--muted); text-align: left; padding: 4px 2px; font-size: .88rem }
+.lhead-btn b { color: var(--fg) }
+.lhead-btn:hover { color: var(--fg) }
+.lhead-x { flex: 0 0 auto; width: 28px; height: 28px; border: 0; border-radius: 50%; background: var(--bg); color: var(--muted); font-size: 1.05rem; line-height: 1 }
+.lmenu { display: grid; gap: 12px; background: var(--bg); border-radius: 10px; padding: 12px }
+.panel-scroll.is-learning { padding-bottom: 0 }
+.lfoot { position: sticky; bottom: 0; z-index: 1; display: flex; align-items: center; gap: 12px; margin: 4px -18px 0; padding: 12px 18px; background: var(--surface); border-top: 1px solid var(--line) }
+.sheet .lfoot { position: static; margin: 4px 0 0; padding: 12px 0 }
+.lbar { flex: 1 1 auto; height: 4px; border-radius: 2px; background: var(--line); overflow: hidden }
+.lbar span { display: block; height: 100%; background: var(--ink); transition: width .25s ease }
+.lfoot .btn { white-space: nowrap }
+details.evidence summary { cursor: pointer; font-family: var(--f-mono); font-size: .72rem; letter-spacing: .06em }
+
+.kv { margin: 0; display: grid }
+.kv > div { display: grid; grid-template-columns: minmax(72px, 36%) 1fr; gap: 12px; padding: 8px 0; border-bottom: 1px solid var(--line) }
+.kv > div:last-child { border-bottom: 0 }
+.kv dt { color: var(--muted); font-size: .84rem }
+.kv dd { margin: 0; font-size: .92rem }
+.kv-map dt { color: var(--fg); font-weight: 600 }
+.kv-map dd { display: grid; gap: 2px }
+.kv-map dd b { color: var(--ink); font-weight: 600 }
+.kv-map dd span { color: var(--muted); font-size: .82rem; line-height: 1.5 }
+
+.vflow { list-style: none; margin: 0; padding: 0 0 0 20px; display: grid; gap: 12px; position: relative }
+.vflow::before { content: ""; position: absolute; left: 5px; top: 8px; bottom: 8px; width: 2px; background: var(--line) }
+.vflow > li { position: relative; display: grid; gap: 1px }
+.vflow > li::before { content: ""; position: absolute; left: -20px; top: 6px; width: 12px; height: 12px; border-radius: 50%; background: var(--surface); border: 2px solid var(--gold) }
+.vflow .via { font-size: .74rem; color: var(--gold) }
+.vflow .note { font-size: .84rem; color: var(--muted) }
+.card.story .dialog .vflow::before { background: color-mix(in srgb, var(--surface) 35%, transparent) }
+.card.story .dialog .vflow > li::before { background: var(--fg) }
+.card.story .dialog .vflow .note { color: inherit; opacity: .75 }
+/* 내용이 짧아도 이동 줄은 패널 맨 아래에 둔다 */
+.panel-scroll.is-learning { display: flex; flex-direction: column }
+.panel-scroll.is-learning > .learning { flex: 1 0 auto; display: flex; flex-direction: column }
+.learning .lfoot { margin-top: auto }

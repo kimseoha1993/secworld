@@ -119,7 +119,9 @@ export default function App() {
   const fly = useMemo(() => {
     if (!learning) return { key: 'r' + flyReq.key, parts: flyReq.parts, links: flyReq.links }
     const f = (at.kind === 'card' && at.card.focus) || stage.focus
-    return { key: `l-${unit.id}-${up.stage}-${up.step}`, parts: f.parts || [], links: f.links || [] }
+    // 이동 기준은 카드 위치가 아니라 강조 대상이다. 대상이 같은 카드끼리 넘기면 지도는 그대로 있다
+    const parts = f.parts || [], links = f.links || []
+    return { key: `l-${parts.join(',')}|${links.join(',')}`, parts, links }
   }, [learning, flyReq, at, stage, unit.id, up.stage, up.step])
 
   const pin = learning ? stage.focus.pin : HOME
@@ -165,8 +167,9 @@ export default function App() {
         <aside ref={panelRef} className={'panel' + (panelOpen ? '' : ' folded')} aria-label="설명">
           <div className="panel-inner" inert={panelOpen ? undefined : true}>
             <div className="panel-top">{searchBar}</div>
-            <div className="panel-scroll">
-              {head}
+            <div className={'panel-scroll' + (learning && !q ? ' is-learning' : '')}>
+              {/* 학습 중에는 제목줄을 숨기고 학습 머리 한 줄만 둔다 */}
+              {!(learning && !q) && head}
               {body}
             </div>
           </div>

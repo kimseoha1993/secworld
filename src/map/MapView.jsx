@@ -6,6 +6,10 @@ const BY_ID = Object.fromEntries(PARTS.map((r) => [r.id, r]))
 const ALL_BOX = { x: 0, y: 0, w: MAP_SIZE.w, h: MAP_SIZE.h }
 // 내 위치 버튼: 핀이 있는 기관을 보이는 영역 가운데에 이 배율로 둔다
 const LOCATE_K = 1
+// 학습 이동: 이 배율보다 작으면 글씨를 읽기 어렵다고 보고 다시 맞춘다. EDGE 는 '보인다'고 칠 화면 가장자리 여유
+const READ_K = 0.7
+const EDGE = 16
+const FIT_PAD = 72
 const LOCK_OPEN = 'M-3.5 -1 V-5 A3.5 3.5 0 0 1 3.5 -5 V-7'
 const LOCK_SHUT = 'M-3.5 -1 V-5 A3.5 3.5 0 0 1 3.5 -5 V-1'
 
@@ -50,7 +54,7 @@ export function Lock({ open, ...props }) {
 export default function MapView({ real, focus, pin, openParts, onSelect, fly, insetLeft = 0, insetBottom = 0 }) {
   const svgRef = useRef(null)
   const [size, setSize] = useState(null)
-  const { view, zoomAt, flyTo, movedRef } = useViewport(svgRef)
+  const { view, viewRef, zoomAt, flyTo, movedRef } = useViewport(svgRef)
 
   useLayoutEffect(() => {
     const el = svgRef.current
@@ -74,8 +78,25 @@ export default function MapView({ real, focus, pin, openParts, onSelect, fly, in
     if (!area) return
     const f = flyRef.current
     const box = f && (f.parts.length || f.links.length) ? boxOf(f.parts, f.links || []) : ALL_BOX
-    flyTo(fitView(box, area, box === ALL_BOX ? 24 : 72), first.current ? 0 : 650)
-    first.current = false
+    if (first.current || box === ALL_BOX) {
+      flyTo(fitView(box, area, box === ALL_BOX ? 24 : 72), first.current ? 0 : 650)
+      first.current = false
+      return
+    }
+    // 대상이 이미 보이고 읽을 만한 배율이면 움직이지 않는다. 지금 배율로 다 들어가면 위치만 옮긴다
+    const v = viewRef.current
+    const readable = v.k >= READ_K
+    const sx0 = box.x * v.k + v.x, sy0 = box.y * v.k + v.y
+    const sx1 = (box.x + box.w) * v.k + v.x, sy1 = (box.y + box.h) * v.k + v.y
+    const inside = sx0 >= area.x + EDGE && sy0 >= area.y + EDGE && sx1 <= area.x + area.w - EDGE && sy1 <= area.y + area.h - EDGE
+    if (readable && inside) return
+    const fits = box.w * v.k <= area.w - FIT_PAD * 2 && box.h * v.k <= area.h - FIT_PAD * 2
+    if (readable && fits) {
+      const cx = box.x + box.w / 2, cy = box.y + box.h / 2
+      flyTo({ k: v.k, x: area.x + area.w / 2 - cx * v.k, y: area.y + area.h / 2 - cy * v.k }, 500)
+      return
+    }
+    flyTo(fitView(box, area, FIT_PAD), 650)
     // 이동은 요청(key)이 바뀌거나 보이는 영역이 바뀔 때만 한다. 끌어서 옮긴 뒤 다시 그려질 때 되돌아가지 않게
   }, [fly && fly.key, area, flyTo])
 

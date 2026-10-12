@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { SOURCES } from '../../content/sources.js'
 import { stageOpen, stepAt, unitTitle } from '../content.js'
 import Blocks, { collectTerms, TermCaption } from './Blocks.jsx'
@@ -21,11 +21,12 @@ function Track({ unit, up, onStage }) {
   )
 }
 
+// 근거는 접어 둔다. 본문을 읽는 데 방해되지 않게
 function Evidence({ notes }) {
   if (!notes || !notes.length) return null
   return (
-    <section className="evidence">
-      <h3>근거</h3>
+    <details className="evidence">
+      <summary>근거 {notes.length}</summary>
       <ol>
         {notes.map((n, i) => (
           <li key={i}>
@@ -34,7 +35,7 @@ function Evidence({ notes }) {
           </li>
         ))}
       </ol>
-    </section>
+    </details>
   )
 }
 
@@ -91,51 +92,47 @@ export default function Learning({ unit, up, setUp, onClose }) {
   const go = (patch) => setUp((p) => ({ ...p, ...patch }))
   const pass = () => setUp((p) => ({ ...p, done: { ...p.done, [stage.id]: true } }))
 
+  const [menu, setMenu] = useState(false)
+  const pos = up.step + 1
+  const count = total + 1
+  let next = null
+  if (at.kind !== 'test') next = { label: up.step === total - 1 ? '확인 테스트로' : '다음', on: () => go({ step: up.step + 1 }) }
+  else if (passed && !last) next = { label: unit.stages[up.stage + 1].label + '로', on: () => go({ stage: up.stage + 1, step: 0 }) }
+
   return (
     <div className="learning">
-      <div className="qhead">
-        <div className="unit-title">{unitTitle(unit)}</div>
-        <button type="button" className="qclose" onClick={onClose}>관계도로</button>
+      {/* 머리는 한 줄. 누르면 단계 이동과 장면 정보가 펼쳐진다 */}
+      <div className="lhead">
+        <button type="button" className="lhead-btn" aria-expanded={menu} onClick={() => setMenu((m) => !m)}>
+          <span><b>{unitTitle(unit)}</b> · {stage.label} · {pos}/{count}</span>
+          <span aria-hidden="true">{menu ? '▴' : '▾'}</span>
+        </button>
+        <button type="button" className="lhead-x" onClick={onClose} aria-label="학습 닫고 관계도로">×</button>
       </div>
-      <Track unit={unit} up={up} onStage={(i) => go({ stage: i, step: 0 })} />
-
-      {at.kind !== 'scene' && (
-        <div className="scene-mini">
-          <span>누가 <b>{stage.scene.who}</b></span>
-          <span>어디서 <b>{stage.scene.where}</b></span>
-          <span>무엇을 <b>{stage.scene.what}</b></span>
+      {menu && (
+        <div className="lmenu">
+          <Track unit={unit} up={up} onStage={(i) => { go({ stage: i, step: 0 }); setMenu(false) }} />
+          <dl className="kv">
+            <div><dt>누가</dt><dd>{stage.scene.who}</dd></div>
+            <div><dt>어디서</dt><dd>{stage.scene.where}</dd></div>
+            <div><dt>무엇을</dt><dd>{stage.scene.what}</dd></div>
+          </dl>
         </div>
       )}
-
-      <div className="steps" aria-label="진행">
-        {Array.from({ length: total + 1 }, (_, i) => (
-          <button type="button" key={i} className={'dot' + (i < up.step ? ' seen' : '')}
-            aria-current={i === up.step ? 'step' : undefined}
-            aria-label={i === 0 ? '장면' : i <= stage.cards.length ? stage.cards[i - 1].label : '확인 테스트'}
-            onClick={() => go({ step: i })} />
-        ))}
-      </div>
 
       {at.kind === 'test'
         ? <section className="card"><Test key={unit.id + stage.id} stage={stage} onPass={pass} /></section>
         : <StepCard key={unit.id + stage.id + '-' + up.step} stage={stage} at={at} />}
-
-      <div className="nav">
-        <button type="button" className="btn ghost" disabled={up.step === 0} onClick={() => go({ step: up.step - 1 })}>이전</button>
-        {at.kind !== 'test' && (
-          <button type="button" className="btn" onClick={() => go({ step: up.step + 1 })}>
-            {up.step === total - 1 ? '확인 테스트로' : '다음'}
-          </button>
-        )}
-        {at.kind === 'test' && passed && !last && (
-          <button type="button" className="btn" onClick={() => go({ stage: up.stage + 1, step: 0 })}>
-            {unit.stages[up.stage + 1].label}로
-          </button>
-        )}
-        {at.kind === 'test' && passed && last && <span className="end">{unitTitle(unit)}을(를) 모두 통과했습니다.</span>}
-      </div>
+      {at.kind === 'test' && passed && last && <p className="end">{unitTitle(unit)}을(를) 모두 통과했습니다.</p>}
 
       {at.kind === 'card' && <Evidence notes={at.card.notes} />}
+
+      {/* 이동은 아래에 고정 */}
+      <div className="lfoot">
+        <button type="button" className="btn ghost" disabled={up.step === 0} onClick={() => go({ step: up.step - 1 })}>← 이전</button>
+        <div className="lbar" aria-hidden="true"><span style={{ width: (pos / count * 100) + '%' }} /></div>
+        <button type="button" className="btn" disabled={!next} onClick={next ? next.on : undefined}>{next ? next.label + ' →' : '다음 →'}</button>
+      </div>
     </div>
   )
 }

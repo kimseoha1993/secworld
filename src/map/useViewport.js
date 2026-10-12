@@ -130,7 +130,7 @@ export function useViewport(elRef) {
     }
   }, [elRef, setView, stopAnim, zoomAt, flyTo])
 
-  return { view, zoomAt, flyTo, movedRef }
+  return { view, viewRef, zoomAt, flyTo, movedRef }
 }
 
 // 지도 좌표의 상자(box)를 화면의 보이는 영역(area)에 맞추는 view
